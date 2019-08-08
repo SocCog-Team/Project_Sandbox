@@ -139,37 +139,7 @@ for i_fixation_target_x_y_coordinate = 1 : length(existing_fixation_target_x_y_c
 	table(current_target_ID_lidx, 3) = current_target_ID;
 end
 
-% tmp = table(:, 3);
-% nofixationpoints_idx = table(:,1:2) == 0;
-% table(nofixationpoints_idx(:, 1), 3) = 0;
-% center_idx= table(:,1) == 960 & table(:,2) == 420;
-% table(center_idx,3) = 1;
-% bottom_center_idx= table(:,1) == 737.8000 & table(:,2) == 420;
-% table(bottom_center_idx,3) = 2;
-% top_center_idx= table(:,1) == 1.1822e+03 & table(:,2) == 420;
-% table(top_center_idx,3) = 3;
-% top_left_idx= table(:,1) == 1.1822e+03 & table(:,2) == 300;
-% table(top_left_idx,3) = 4;
-% center_left_idx= table(:,1) == 960 & table(:,2) == 300;
-% table(center_left_idx,3) = 5;
-% bottom_left_idx= table(:,1) == 737.8000 & table(:,2) == 300;
-% table(bottom_left_idx,3) = 6;
-% bottom_right_idx= table(:,1) == 737.8000 & table(:,2) == 540;
-% table(bottom_right_idx,3) = 7;
-% center_right_idx= table(:,1) == 960 & table(:,2) == 540;
-% table(center_right_idx,3) = 8;
-% top_right_idx= table(:,1) == 1.1822e+03 & table(:,2) == 540;
-% table(top_right_idx,3) = 9;
-% 
-% %table(35112:end,:)= [];
-% isequal(tmp, table(:, 3))
-% tmp2 = [tmp, table(:, 3)];
-% tmp_diff = (diff(tmp));
-% tmp_idx = find(tmp_diff ~= 0);
-% tmp2_diff = (diff(table(:, 3)));
-% tmp2_idx = find(tmp2_diff ~= 0);
-% tmp3 = [tmp(tmp_idx),  table(tmp_idx, 3)]; 
-% tmp4 = [tmp(tmp_idx+1),  table(tmp_idx+1, 3)]; 
+
 
 
 switch_list = diff(table(:, 3));
@@ -233,10 +203,7 @@ set(gca(), 'XLim', [(960-300) (960+300)], 'YLim', [(1080-500-200) (1080-500+400)
 hold on
 plot(gaze_x(:),gaze_y(:),'b','LineWidth', 1, 'Color', [0.8 0.8 0.8])
 
-% tmp_gaze_x = NaN;
-% tmp_gaze_x(fixation_points_idx) = gaze_x(fixation_points_idx);
-% tmp_gaze_y = NaN;
-% tmp_gaze_y(fixation_points_idx) = gaze_y(fixation_points_idx);
+
 
 plot(gaze_x(fixation_points_idx), gaze_y(fixation_points_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'b', 'Marker', '+', 'Markersize', 1);
 plot(gaze_x(tmp_fixation_points_idx), gaze_y(tmp_fixation_points_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'm', 'Marker', '+', 'Markersize', 1);
@@ -276,25 +243,10 @@ end
 
 x_y_mouse = [x_y_mouse_y_flipped(:, 1), ((x_y_mouse_y_flipped(:,2) .* -1) + 1080)];
 
-%[x,y]= getpts
-%x_y_mouse= [x,y]
-%plot(x(:),y(:),'LineStyle', 'none','Color','k','Marker','+','Markersize',15)
 
 hold off
 xlim([(960-300) (960+300)]);
 ylim ([(1080-500-200) (1080-500+400)]);
-
-% gaze_x_y=horzcat(gaze_x, gaze_y);
-% euclidean_distance1 = sqrt(((gaze_x_y(:,1)-x_y_mouse(1,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(1,2)).^2));
-% euclidean_distance2 = sqrt(((gaze_x_y(:,1)-x_y_mouse(2,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(2,2)).^2));
-% euclidean_distance3 = sqrt(((gaze_x_y(:,1)-x_y_mouse(3,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(3,2)).^2));
-% euclidean_distance4 = sqrt(((gaze_x_y(:,1)-x_y_mouse(4,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(4,2)).^2));
-% euclidean_distance5 = sqrt(((gaze_x_y(:,1)-x_y_mouse(5,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(5,2)).^2));
-% euclidean_distance6 = sqrt(((gaze_x_y(:,1)-x_y_mouse(6,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(6,2)).^2));
-% euclidean_distance7 = sqrt(((gaze_x_y(:,1)-x_y_mouse(7,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(7,2)).^2));
-% euclidean_distance8 = sqrt(((gaze_x_y(:,1)-x_y_mouse(8,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(8,2)).^2));
-% euclidean_distance9 = sqrt(((gaze_x_y(:,1)-x_y_mouse(9,1)).^2) + ((gaze_x_y(:,2)-x_y_mouse(9,2)).^2));
-% euclidean_distance = horzcat(euclidean_distance1,euclidean_distance2,euclidean_distance3,euclidean_distance4,euclidean_distance5,euclidean_distance6,euclidean_distance7,euclidean_distance8,euclidean_distance9);
 
 nonzero_unique_fixation_target_idx = find(unique_fixation_targets);
 euclidean_distance_array = zeros([size(gaze_x, 1), length(nonzero_unique_fixation_target_idx)]);

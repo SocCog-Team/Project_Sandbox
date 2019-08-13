@@ -11,7 +11,7 @@ if ~exist('acceptable_radius_pix', 'var') || isempty(acceptable_radius_pix)
 	acceptable_radius_pix = 10;
 end
 
-if ~exist('transformationType', 'var') || isempty(acceptabtransformationTypele_radius_pix)
+if ~exist('transformationType', 'var') || isempty(transformationType)
 	transformationType = 'affine';
 end
 

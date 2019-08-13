@@ -351,13 +351,12 @@ target_selected_samples = [data_struct_extract.data(selected_samples_idx, data_s
 
 %tform = fitgeotrans(moving, fixed, transformationType);
 
-tform = fitgeotrans(gaze_selected_samples, target_selected_samples, transformationType);
-
+%tform = fitgeotrans(gaze_selected_samples, target_selected_samples, transformationType);
 tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 
 %[registered_gaze_selected_samples] = transformPointsForward(tform, target_selected_samples); 
 %[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
-[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
+%[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
 [registered_gaze_selected_samples] = transformPointsInverse(tform, gaze_selected_samples); 
 
 

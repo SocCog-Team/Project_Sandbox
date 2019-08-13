@@ -1,11 +1,20 @@
-function [] = fn_create_matlab_calibration_from_gaze_calibration(gaze_tracker_logfile_FQN, acceptable_radius_pix)
+function [] = fn_create_matlab_calibration_from_gaze_calibration(gaze_tracker_logfile_FQN, velocity_threshold_pixels_per_sample, acceptable_radius_pix, transformationType)
 
-debug = 1;
+debug = 0;
 
+
+if ~exist('velocity_threshold_pixels_per_sample', 'var') || isempty(velocity_threshold_pixels_per_sample)
+	velocity_threshold_pixels_per_sample = 0.05;
+end
 
 if ~exist('acceptable_radius_pix', 'var') || isempty(acceptable_radius_pix)
-	acceptable_radius_pix = 50;
+	acceptable_radius_pix = 10;
 end
+
+if ~exist('transformationType', 'var') || isempty(acceptabtransformationTypele_radius_pix)
+	transformationType = 'affine';
+end
+
 
 
 if ~exist('gaze_tracker_logfile_FQN', 'var')	
@@ -90,9 +99,7 @@ deltat = unique(diff(timestamps));
 
 velocity = euclidean_dist / deltat;
 
-
-
-tmp_fixation_points_idx = find(euclidean_dist <= 0.05);
+tmp_fixation_points_idx = find(euclidean_dist <= velocity_threshold_pixels_per_sample);
 
 fixation_points_idx_diff = diff(tmp_fixation_points_idx);
 
@@ -168,7 +175,7 @@ for i_switch = 1 : length(targetstart_ts_idx)
 	current_target_ID = table(current_start_idx, 3);
 	current_target_duration = current_end_ts - current_start_ts;
 	
-	% get the fixation tarhet's cordinates
+	% get the fixation target's cordinates
 	current_target_x = table(current_start_idx, 1);
 	current_target_y = table(current_start_idx, 2);
 	if current_target_duration >= saccade_allowance_time_ms
@@ -210,8 +217,7 @@ plot(gaze_x(tmp_fixation_points_idx), gaze_y(tmp_fixation_points_idx), 'LineWidt
 plot(gaze_x(validpoints_idx),gaze_y(validpoints_idx),'LineWidth',1, 'LineStyle', 'none', 'Color', 'y', 'Marker', '+', 'Markersize', 1);
 plot(gaze_x(bad_sample_points_idx),gaze_y(bad_sample_points_idx), 'LineWidth',1, 'LineStyle', 'none', 'Color', 'g', 'Marker', '+', 'Markersize', 1);
 
-%plot((80:100), 900);
-title('Select the center of each of the calibration dots');
+
 
 
 
@@ -235,26 +241,33 @@ for i_fix_target = 1 : length(find(unique_fixation_targets))
 	end
 	
 	x_y_mouse_y_flipped(i_fix_target, 1) = tmp_x_list(end);
-	x_y_mouse_y_flipped(i_fix_target, 2) = tmp_y_list(end);
+
+    x_y_mouse_y_flipped(i_fix_target, 2) = tmp_y_list(end);
+
+	
 	
 	plot(fixation_target_position_table_flipped(unique_fixation_target_id, 1), fixation_target_position_table_flipped(unique_fixation_target_id, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', '+', 'Markersize', 15);
-	plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', 'x', 'Markersize', 15);
+	
+plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', 'x', 'Markersize', 15);
 end
 
-x_y_mouse = [x_y_mouse_y_flipped(:, 1), ((x_y_mouse_y_flipped(:,2) .* -1) + 1080)];
-
-
+%x_y_mouse = [x_y_mouse_y_flipped(:, 1), ((x_y_mouse_y_flipped(:,2) .* -1) + 1080)];
+x_y_mouse = [x_y_mouse_y_flipped(:, 1), x_y_mouse_y_flipped(:,2)];
 hold off
 xlim([(960-300) (960+300)]);
 ylim ([(1080-500-200) (1080-500+400)]);
 
 nonzero_unique_fixation_target_idx = find(unique_fixation_targets);
+
 euclidean_distance_array = zeros([size(gaze_x, 1), length(nonzero_unique_fixation_target_idx)]);
+
+
 
 for i_fix_target = 1 : length(find(unique_fixation_targets))
 	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
 	
-	euclidean_distance_array(:, unique_fixation_target_id) = sqrt(((gaze_x - x_y_mouse(unique_fixation_target_id,1)).^2 ) + ((gaze_y_unflipped - x_y_mouse(unique_fixation_target_id,2)).^2 ));
+	euclidean_distance_array(:, unique_fixation_target_id) = sqrt(((gaze_x - x_y_mouse_y_flipped(unique_fixation_target_id, 1)).^2 ) + ...
+																	((gaze_y - x_y_mouse_y_flipped(unique_fixation_target_id, 2)).^2 ));
 	
 	if (debug)
 		figure_h = figure('Name', ['FixationTarget_', num2str(unique_fixation_target_id)]);
@@ -264,6 +277,106 @@ end
 
 
 %histogram((euclidean_distance(:, :)),(0.00:1:650));
+
+
+% acceptable_radius_pix
+points_close_2_fixation_centers_idx = [];
+distance_gaze_2_target_pix = [];
+for i_fix_target = 1 : length(find(unique_fixation_targets))
+	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
+	current_points_idx = find(euclidean_distance_array(:, unique_fixation_target_id) <= acceptable_radius_pix);
+	distance_gaze_2_target_pix = [distance_gaze_2_target_pix; euclidean_distance_array(current_points_idx, unique_fixation_target_id)];
+	points_close_2_fixation_centers_idx = [points_close_2_fixation_centers_idx; current_points_idx];
+end
+
+points_close_2_fixation_centers_idx = sort(points_close_2_fixation_centers_idx);
+
+tmp_target_selected_samples = [data_struct_extract.data(points_close_2_fixation_centers_idx, data_struct_extract.cn.FixationPointX) data_struct_extract.data(points_close_2_fixation_centers_idx, data_struct_extract.cn.FixationPointY)];
+
+tmp_gaze_selected_samples = [gaze_x(points_close_2_fixation_centers_idx) gaze_y_unflipped(points_close_2_fixation_centers_idx)];
+figure('Name', 'selected_samples');
+plot(tmp_target_selected_samples(:, 1), tmp_target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+hold on
+plot(tmp_gaze_selected_samples(:, 1), tmp_gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+hold off
+
+
+% select list of target x and y and gaze x and y values for all sample
+% points with euclidean_distance <= acceptable_radius_pix, and
+% euclidean_distance-in_time <= velocity_threshold_pixels_per_sample
+
+selected_samples_idx = (1:1:size(euclidean_distance_array, 1))';
+selected_samples_idx = intersect(selected_samples_idx, points_close_2_fixation_centers_idx);
+
+% this here is pixel distance between samples over time!
+selected_samples_idx = intersect(selected_samples_idx, find(euclidean_dist <= velocity_threshold_pixels_per_sample));
+
+% only samples xx ms after target onset
+selected_samples_idx = intersect(selected_samples_idx, good_sample_points_idx);
+
+% exclude the epochs witout a displayed target
+selected_samples_idx = intersect(selected_samples_idx, find(table(:, 3)));
+
+
+
+% moving
+gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_Y)];
+gaze_selected_samples = [gaze_x(selected_samples_idx) gaze_y_unflipped(selected_samples_idx)];
+
+
+right_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_Y)];
+left_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_Y)];
+
+%fixed
+target_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointX) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointY)];
+
+% unique([data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointX) ...
+%		data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointY)], 'rows')
+
+% fixed = [(1:1:100); (1:1:100)]';
+% 
+% noise_list = (1.0 * rand([size(fixed, 1) 1]));
+% 
+% moving = (fixed * 0.666 + 10) ;%.+ [zeros([100 1])'; noise_list];
+% 
+% figure('Name', 'Who cares');
+% plot(fixed);
+% hold on
+% plot(moving)
+% 
+% hold off 
+
+
+
+%tform = fitgeotrans(moving, fixed, transformationType);
+
+tform = fitgeotrans(gaze_selected_samples, target_selected_samples, transformationType);
+
+tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
+
+%[registered_gaze_selected_samples] = transformPointsForward(tform, target_selected_samples); 
+%[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
+[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
+[registered_gaze_selected_samples] = transformPointsInverse(tform, gaze_selected_samples); 
+
+
+
+figure('Name', 'applied registration');
+
+
+plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+
+hold on
+plot(gaze_selected_samples(:, 1), gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_gaze_selected_samples(:, 1), registered_gaze_selected_samples(:, 2), 'Color', [0 1 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+hold off
+
+
+
+
+
+
+
 
 
 return

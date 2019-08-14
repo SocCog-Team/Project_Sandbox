@@ -1,7 +1,10 @@
-function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, velocity_threshold_pixels_per_sample, acceptable_radius_pix, transformationType)
+function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, acceptable_radius_pix, transformationType)
 
 debug = 0;
 
+if ~exist('tracker_type', 'var') || isempty(tracker_type)
+	tracker_type = 'eyelink';
+end
 
 if ~exist('velocity_threshold_pixels_per_sample', 'var') || isempty(velocity_threshold_pixels_per_sample)
 	velocity_threshold_pixels_per_sample = 0.05;
@@ -201,22 +204,24 @@ good_sample_points_idx = find(good_sample_points_lidx);
 bad_sample_points_idx = find(good_sample_points_lidx == 0);
 
 
-[pathstr, name, ext] = fileparts(gaze_tracker_logfile_FQN);
-figure_handle = figure('Name', ['Roberta''s gaze visualizer: ', name, ext]);
+[gaze_tracker_logfile_path, gaze_tracker_logfile_name, gaze_tracker_logfile_ext] = fileparts(gaze_tracker_logfile_FQN);
+figure_handle = figure('Name', ['Roberta''s gaze visualizer: ', gaze_tracker_logfile_name, gaze_tracker_logfile_ext]);
 % subplot(2, 1, 2)
 plot(fixation_point_x(:),fixation_point_y(:),'s','MarkerSize',10,'MarkerFaceColor',[1 0 0]);
 
 set(gca(), 'XLim', [(960-300) (960+300)], 'YLim', [(1080-500-200) (1080-500+400)]);
 
 hold on
+% full traces all points with lines in between
 plot(gaze_x(:),gaze_y(:),'b','LineWidth', 1, 'Color', [0.8 0.8 0.8])
-
-
-
+% blue fixation points
 plot(gaze_x(fixation_points_idx), gaze_y(fixation_points_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'b', 'Marker', '+', 'Markersize', 1);
+% magenta, points exceeding the velocity threshold
 plot(gaze_x(tmp_fixation_points_idx), gaze_y(tmp_fixation_points_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'm', 'Marker', '+', 'Markersize', 1);
-plot(gaze_x(validpoints_idx),gaze_y(validpoints_idx),'LineWidth',1, 'LineStyle', 'none', 'Color', 'y', 'Marker', '+', 'Markersize', 1);
-plot(gaze_x(bad_sample_points_idx),gaze_y(bad_sample_points_idx), 'LineWidth',1, 'LineStyle', 'none', 'Color', 'g', 'Marker', '+', 'Markersize', 1);
+% points immediately after fixation point onsets, when the sunbject can not fixate
+plot(gaze_x(bad_sample_points_idx),gaze_y(bad_sample_points_idx), 'LineWidth',1, 'LineStyle', 'none', 'Color', 'r', 'Marker', '+', 'Markersize', 1);
+% surviving points
+plot(gaze_x(validpoints_idx),gaze_y(validpoints_idx),'LineWidth',1, 'LineStyle', 'none', 'Color', [0 0.8 0], 'Marker', '+', 'Markersize', 1);
 
 
 
@@ -251,6 +256,8 @@ for i_fix_target = 1 : length(find(unique_fixation_targets))
 	
 plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', 'x', 'Markersize', 15);
 end
+
+saveas (gcf,'Select the center of the gaze sample cloud belonging to fixation target.fig')
 
 %x_y_mouse = [x_y_mouse_y_flipped(:, 1), ((x_y_mouse_y_flipped(:,2) .* -1) + 1080)];
 x_y_mouse = [x_y_mouse_y_flipped(:, 1), x_y_mouse_y_flipped(:,2)];
@@ -319,11 +326,26 @@ selected_samples_idx = intersect(selected_samples_idx, good_sample_points_idx);
 selected_samples_idx = intersect(selected_samples_idx, find(table(:, 3)));
 
 
+% for re-registering the raw gaze data, exclude samples with invalid
+% tracker data (tracker specific?)
+switch(tracker_type)
+	case 'eyelink'
+		out_of_bounds_marker_value = -32768;
+		valid_right_eye_raw_idx = find(data_struct_extract.data(:, data_struct_extract.cn.Right_Eye_Raw_X) ~= out_of_bounds_marker_value);
+		valid_left_eye_raw_idx = find(data_struct_extract.data(:, data_struct_extract.cn.Left_Eye_Raw_X) ~= out_of_bounds_marker_value);
+		valid_eye_raw_idx = intersect(valid_right_eye_raw_idx, valid_left_eye_raw_idx);
+		selected_samples_idx = intersect(selected_samples_idx, valid_eye_raw_idx);
+	otherwise
+		error(['tracker_type: ', tracker_type, ' not yet supported.']);
+end
+
 
 % moving
 gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_Y)];
 gaze_selected_samples = [gaze_x(selected_samples_idx) gaze_y_unflipped(selected_samples_idx)];
 
+
+%
 
 right_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_Y)];
 left_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_Y)];
@@ -354,30 +376,148 @@ target_selected_samples = [data_struct_extract.data(selected_samples_idx, data_s
 %tform = fitgeotrans(gaze_selected_samples, target_selected_samples, transformationType);
 tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 
+tform_right_raw = fitgeotrans(target_selected_samples, right_raw_gaze_selected_samples, transformationType);
+tform_left_raw = fitgeotrans(target_selected_samples, left_raw_gaze_selected_samples, transformationType);
+
+
+save('tform.mat','tform');
+
+
+
 %[registered_gaze_selected_samples] = transformPointsForward(tform, target_selected_samples); 
 %[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
 %[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
 [registered_gaze_selected_samples] = transformPointsInverse(tform, gaze_selected_samples); 
 
+registered_left_raw_gaze_selected_samples = transformPointsInverse(tform_left_raw, left_raw_gaze_selected_samples); 
+registered_right_raw_gaze_selected_samples = transformPointsInverse(tform_right_raw, right_raw_gaze_selected_samples); 
 
 
 figure('Name', 'applied registration');
 
-
 plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
-
 hold on
 plot(gaze_selected_samples(:, 1), gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
-plot(registered_gaze_selected_samples(:, 1), registered_gaze_selected_samples(:, 2), 'Color', [0 1 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_gaze_selected_samples(:, 1), registered_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
 hold off
 
+saveas(gcf,'applied_registration.fig');
+
+left_right_raw_fh = figure('Name', 'Left/Right raw gaze samples re-registered');
+subplot(1, 2, 1);
+plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+hold on
+plot(left_raw_gaze_selected_samples(:, 1), left_raw_gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_left_raw_gaze_selected_samples(:, 1), registered_left_raw_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+hold off
+title('left eye');
+axis equal
 
 
-
-
-
+subplot(1, 2, 2);
+plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+hold on
+plot(right_raw_gaze_selected_samples(:, 1), right_raw_gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_right_raw_gaze_selected_samples(:, 1), registered_right_raw_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+hold off
+title('right eye');
+axis equal
+write_out_figure(left_right_raw_fh, fullfile(gaze_tracker_logfile_path, 'left_right_raw.pdf'));
 
 
 
 return
 end
+
+
+function [ ret_val ] = write_out_figure(img_fh, outfile_fqn, verbosity_str, print_options_str)
+%WRITE_OUT_FIGURE save the figure referenced by img_fh to outfile_fqn,
+% using .ext of outfile_fqn to decide which image type to save as.
+%   Detailed explanation goes here
+% write out the data
+
+if ~exist('verbosity_str', 'var')
+	verbosity_str = 'verbose';
+end
+
+% check whether the path exists, create if not...
+[pathstr, name, img_type] = fileparts(outfile_fqn);
+if isempty(dir(pathstr)),
+	mkdir(pathstr);
+end
+
+% deal with r2016a changes, needs revision
+if (strcmp(version('-release'), '2016a'))
+	set(img_fh, 'PaperPositionMode', 'manual');
+	if ~ismember(img_type, {'.png', '.tiff', '.tif'})
+		print_options_str = '-bestfit';
+	end
+end
+
+if ~exist('print_options_str', 'var') || isempty(print_options_str)
+	print_options_str = '';
+else
+	print_options_str = [', ''', print_options_str, ''''];
+end
+resolution_str = ', ''-r600''';
+
+
+
+
+
+device_str = [];
+
+switch img_type(2:end)
+	case 'pdf'
+		% pdf in 7.3.0 is slightly buggy...
+		%print(img_fh, '-dpdf', outfile_fqn);
+		device_str = '-dpdf';
+	case 'ps3'
+		%print(img_fh, '-depsc2', outfile_fqn);
+		device_str = '-depsc';
+		print_options_str = '';
+		outfile_fqn = [outfile_fqn, '.eps'];
+	case {'ps', 'ps2'}
+		%print(img_fh, '-depsc2', outfile_fqn);
+		device_str = '-depsc2';
+		print_options_str = '';
+		outfile_fqn = [outfile_fqn, '.eps'];
+	case {'tiff', 'tif'}
+		% tiff creates a figure
+		%print(img_fh, '-dtiff', outfile_fqn);
+		device_str = '-dtiff';
+	case 'png'
+		% tiff creates a figure
+		%print(img_fh, '-dpng', outfile_fqn);
+		device_str = '-dpng';
+		resolution_str = ', ''-r1200''';
+	case 'eps'
+		%print(img_fh, '-depsc', '-r300', outfile_fqn);
+		device_str = '-depsc';
+	case 'fig'
+		%sm: allows to save figures for further refinements
+		saveas(img_fh, outfile_fqn, 'fig');
+	otherwise
+		% default to uncompressed images
+		disp(['Image type: ', img_type, ' not handled yet...']);
+end
+
+if ~isempty(device_str)
+	device_str = [', ''', device_str, ''''];
+	command_str = ['print(img_fh', device_str, print_options_str, resolution_str, ', outfile_fqn)'];
+	eval(command_str);
+end
+
+if strcmp(verbosity_str, 'verbose')
+	if ~isnumeric(img_fh)
+		disp(['Saved figure (', num2str(img_fh.Number), ') to: ', outfile_fqn]);	% >R2014b have structure figure handles
+	else
+		disp(['Saved figure (', num2str(img_fh), ') to: ', outfile_fqn]);			% older Matlab has numeric figure handles
+	end
+end
+
+ret_val = 0;
+
+return
+end
+

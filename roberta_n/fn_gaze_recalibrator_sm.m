@@ -10,6 +10,14 @@ dbstop if error
 fq_mfilename = mfilename('fullpath');
 mfilepath = fileparts(fq_mfilename);
 
+% eventIDE sets the top left corner as (0,0), matlab sets the bottom left
+% corner to (0,0) to make the up down directions in matlab appear correct
+% we need to adjust the eventide values prior to display into the matlab
+% coordinate system by using the following formula:
+%	matlab_y_value = (eventide_y_value * -1) + eventide_screen_height_pix
+eventide_screen_height_pix = 1080;
+
+
 debug = 0;
 % exclude samples with higher instantaneous veolicity than this value, this
 % will allow to reject samples during saccades
@@ -79,33 +87,47 @@ if ~exist('tracker_type', 'var') || isempty(tracker_type)
 end
 
 
-	
-data_struct_extract = struct([]);
-
-data_struct_extract = fnParseEventIDETrackerLog_v01(gaze_tracker_logfile_FQN, ';', [], []);
-
-nrows_eyetracker = 0;
-ncols_eyetracker = 0;
-[nrows_eyetracker, ncols_eyetracker] = size(data_struct_extract.data);
-
-%invalid_datapoints = find(data_struct_extract.data (:, data_struct_extract.cn.Gaze_X) == -32768); %% Removing invalid data pts as defined by eyelink/eventide
-%data_struct_extract.data(invalid_datapoints, 2:3) = NaN;
-
-fixation_point_x = (data_struct_extract.data(:, data_struct_extract.cn.FixationPointX));
-fixation_point_y = (data_struct_extract.data(:, data_struct_extract.cn.FixationPointY)* -1) + 1080; %flipped
-
-tmp_gaze_x = data_struct_extract.data(:, data_struct_extract.cn.Gaze_X);
-tmp_gaze_y = data_struct_extract.data(:, data_struct_extract.cn.Gaze_Y);
+% load the data	(might take a while)
+data_struct = fnParseEventIDETrackerLog_v01(gaze_tracker_logfile_FQN, ';', [], []);
+ds_colnames = data_struct.cn;
 
 
-calibration.gain_x = data_struct_extract.data(end, data_struct_extract.cn.GLM_Coefficients_GainX);
-calibration.gain_y = data_struct_extract.data(end, data_struct_extract.cn.GLM_Coefficients_GainY);
-calibration.offset_x = data_struct_extract.data(end, data_struct_extract.cn.GLM_Coefficients_OffsetX);
-calibration.offset_y = data_struct_extract.data(end, data_struct_extract.cn.GLM_Coefficients_OffsetY);
+% extract the columns with the eventIDE coordinates for fixation target and the gaze data
+fix_target_x_list = (data_struct.data(:, data_struct.cn.FixationPointX));
+fix_target_y_list = (data_struct.data(:, data_struct.cn.FixationPointY));
+
+% extract the columns with the eventIDE coordinates for the gaze data
+% these are not guaranteed to employ the final/best eventIDE linear
+% registration "matrix" yet.
+eventide_gaze_x = data_struct.data(:, data_struct.cn.Gaze_X);
+eventide_gaze_y = data_struct.data(:, data_struct.cn.Gaze_Y);
+
+% so extract the GLM
+calibration.gain_x = data_struct.data(end, data_struct.cn.GLM_Coefficients_GainX);
+calibration.gain_y = data_struct.data(end, data_struct.cn.GLM_Coefficients_GainY);
+calibration.offset_x = data_struct.data(end, data_struct.cn.GLM_Coefficients_OffsetX);
+calibration.offset_y = data_struct.data(end, data_struct.cn.GLM_Coefficients_OffsetY);
 
 
-tmp2_gaze_x = (data_struct_extract.data(:, data_struct_extract.cn.Right_Eye_Raw_X) * calibration.gain_x) + calibration.offset_x;
-tmp2_gaze_y = (data_struct_extract.data(:, data_struct_extract.cn.Right_Eye_Raw_Y) * calibration.gain_y) + calibration.offset_y;
+
+%invalid_datapoints = find(data_struct.data (:, data_struct.cn.Gaze_X) == -32768); %% Removing invalid data pts as defined by eyelink/eventide
+%data_struct.data(invalid_datapoints, 2:3) = NaN;
+
+fix_target_x_list = (data_struct.data(:, data_struct.cn.FixationPointX));
+fix_target_y_list = (data_struct.data(:, data_struct.cn.FixationPointY)* -1) + 1080; %flipped
+
+tmp_gaze_x = data_struct.data(:, data_struct.cn.Gaze_X);
+tmp_gaze_y = data_struct.data(:, data_struct.cn.Gaze_Y);
+
+
+calibration.gain_x = data_struct.data(end, data_struct.cn.GLM_Coefficients_GainX);
+calibration.gain_y = data_struct.data(end, data_struct.cn.GLM_Coefficients_GainY);
+calibration.offset_x = data_struct.data(end, data_struct.cn.GLM_Coefficients_OffsetX);
+calibration.offset_y = data_struct.data(end, data_struct.cn.GLM_Coefficients_OffsetY);
+
+
+tmp2_gaze_x = (data_struct.data(:, data_struct.cn.Right_Eye_Raw_X) * calibration.gain_x) + calibration.offset_x;
+tmp2_gaze_y = (data_struct.data(:, data_struct.cn.Right_Eye_Raw_Y) * calibration.gain_y) + calibration.offset_y;
 
 gaze_x = tmp2_gaze_x;
 gaze_y_unflipped = tmp2_gaze_y;
@@ -127,7 +149,7 @@ abs_dist_y = abs(dist_y);
 euclidean_dist = sqrt((((dist_x).^2) + ((dist_y).^2)));
 histogram(euclidean_dist, (0.00:0.001:1.0));
 
-timestamps = data_struct_extract.data(:,data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp);
+timestamps = data_struct.data(:,data_struct.cn.Tracker_corrected_EventIDE_TimeStamp);
 deltat = unique(diff(timestamps));
 
 velocity = euclidean_dist / deltat;
@@ -143,12 +165,12 @@ tmp_idx = find(fixation_points_idx_diff <= 1);
 fixation_points_idx = tmp_fixation_points_idx(tmp_idx);
 
 
-validpoints_idx = find(data_struct_extract.data(:, data_struct_extract.cn.FixationPointVisible) >= 1); %points that are visible
+validpoints_idx = find(data_struct.data(:, data_struct.cn.FixationPointVisible) >= 1); %points that are visible
 
 
 
-% trials_centraltarget_x = find (data_struct_extract.data(:,26) == 960);
-% trials_centraltarget_y  = find (data_struct_extract.data(:, 27) == 420);
+% trials_centraltarget_x = find (data_struct.data(:,26) == 960);
+% trials_centraltarget_y  = find (data_struct.data(:, 27) == 420);
 % test= intersect (trials_centraltarget_x ,trials_centraltarget_y ); % trials in which the this fixation target was displayed
 
 
@@ -159,12 +181,12 @@ validpoints_idx = find(data_struct_extract.data(:, data_struct_extract.cn.Fixati
 %fixation_points_idx = (750:1:1250);
 %fixation_points_idx = fixation_points_idx(750:1:1250);
 
-%table= horzcat(data_struct_extract.data(1:35111, data_struct_extract.cn.FixationPointX),(data_struct_extract.data(1:35111, data_struct_extract.cn.FixationPointY)));
-table = horzcat(data_struct_extract.data(:, data_struct_extract.cn.FixationPointX),(data_struct_extract.data(:, data_struct_extract.cn.FixationPointY)));
+%table= horzcat(data_struct.data(1:35111, data_struct.cn.FixationPointX),(data_struct.data(1:35111, data_struct.cn.FixationPointY)));
+table = horzcat(data_struct.data(:, data_struct.cn.FixationPointX),(data_struct.data(:, data_struct.cn.FixationPointY)));
 
 table(:,3)=NaN;
-table(:,4)= (data_struct_extract.data(:,data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp));
-timestamp = (data_struct_extract.data(:,data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp));
+table(:,4)= (data_struct.data(:,data_struct.cn.Tracker_corrected_EventIDE_TimeStamp));
+timestamp = (data_struct.data(:,data_struct.cn.Tracker_corrected_EventIDE_TimeStamp));
 
 existing_fixation_target_x_y_coordinate_list = unique(table(:,1:2), 'rows');
 
@@ -235,7 +257,7 @@ bad_sample_points_idx = find(good_sample_points_lidx == 0);
 
 figure_handle = figure('Name', ['Roberta''s gaze visualizer: ', gaze_tracker_logfile_name, gaze_tracker_logfile_ext]);
 % subplot(2, 1, 2)
-plot(fixation_point_x(:),fixation_point_y(:),'s','MarkerSize',10,'MarkerFaceColor',[1 0 0]);
+plot(fix_target_x_list(:),fix_target_y_list(:),'s','MarkerSize',10,'MarkerFaceColor',[1 0 0]);
 
 set(gca(), 'XLim', [(960-300) (960+300)], 'YLim', [(1080-500-200) (1080-500+400)]);
 
@@ -327,7 +349,7 @@ end
 
 points_close_2_fixation_centers_idx = sort(points_close_2_fixation_centers_idx);
 
-tmp_target_selected_samples = [data_struct_extract.data(points_close_2_fixation_centers_idx, data_struct_extract.cn.FixationPointX) data_struct_extract.data(points_close_2_fixation_centers_idx, data_struct_extract.cn.FixationPointY)];
+tmp_target_selected_samples = [data_struct.data(points_close_2_fixation_centers_idx, data_struct.cn.FixationPointX) data_struct.data(points_close_2_fixation_centers_idx, data_struct.cn.FixationPointY)];
 
 tmp_gaze_selected_samples = [gaze_x(points_close_2_fixation_centers_idx) gaze_y_unflipped(points_close_2_fixation_centers_idx)];
 figure('Name', 'selected_samples');
@@ -359,8 +381,8 @@ selected_samples_idx = intersect(selected_samples_idx, find(table(:, 3)));
 switch(tracker_type)
 	case 'eyelink'
 		out_of_bounds_marker_value = -32768;
-		valid_right_eye_raw_idx = find(data_struct_extract.data(:, data_struct_extract.cn.Right_Eye_Raw_X) ~= out_of_bounds_marker_value);
-		valid_left_eye_raw_idx = find(data_struct_extract.data(:, data_struct_extract.cn.Left_Eye_Raw_X) ~= out_of_bounds_marker_value);
+		valid_right_eye_raw_idx = find(data_struct.data(:, data_struct.cn.Right_Eye_Raw_X) ~= out_of_bounds_marker_value);
+		valid_left_eye_raw_idx = find(data_struct.data(:, data_struct.cn.Left_Eye_Raw_X) ~= out_of_bounds_marker_value);
 		valid_eye_raw_idx = intersect(valid_right_eye_raw_idx, valid_left_eye_raw_idx);
 		selected_samples_idx = intersect(selected_samples_idx, valid_eye_raw_idx);
 	otherwise
@@ -369,20 +391,20 @@ end
 
 
 % moving
-gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Gaze_Y)];
+gaze_selected_samples = [data_struct.data(selected_samples_idx, data_struct.cn.Gaze_X) data_struct.data(selected_samples_idx, data_struct.cn.Gaze_Y)];
 gaze_selected_samples = [gaze_x(selected_samples_idx) gaze_y_unflipped(selected_samples_idx)];
 
 
 %
 
-right_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Right_Eye_Raw_Y)];
-left_raw_gaze_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_X) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.Left_Eye_Raw_Y)];
+right_raw_gaze_selected_samples = [data_struct.data(selected_samples_idx, data_struct.cn.Right_Eye_Raw_X) data_struct.data(selected_samples_idx, data_struct.cn.Right_Eye_Raw_Y)];
+left_raw_gaze_selected_samples = [data_struct.data(selected_samples_idx, data_struct.cn.Left_Eye_Raw_X) data_struct.data(selected_samples_idx, data_struct.cn.Left_Eye_Raw_Y)];
 
 %fixed
-target_selected_samples = [data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointX) data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointY)];
+target_selected_samples = [data_struct.data(selected_samples_idx, data_struct.cn.FixationPointX) data_struct.data(selected_samples_idx, data_struct.cn.FixationPointY)];
 
-% unique([data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointX) ...
-%		data_struct_extract.data(selected_samples_idx, data_struct_extract.cn.FixationPointY)], 'rows')
+% unique([data_struct.data(selected_samples_idx, data_struct.cn.FixationPointX) ...
+%		data_struct.data(selected_samples_idx, data_struct.cn.FixationPointY)], 'rows')
 
 % fixed = [(1:1:100); (1:1:100)]';
 % 

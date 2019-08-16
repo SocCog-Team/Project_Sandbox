@@ -9,6 +9,15 @@ function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, veloc
 %   registration between measured sample coordinates and "real" screen
 %   coordinates.
 
+
+%TODO:
+%	clean-up
+%	save and load the selected fixation position cluster centern
+%	show the size of the close enough points
+%	save pdfs
+%	save tform matrices
+
+
 timestamp_list.(mfilename).start = tic;
 disp(['Starting: ', mfilename]);
 dbstop if error
@@ -64,6 +73,9 @@ if ~exist('gaze_tracker_logfile_FQN', 'var')
 		
 		% network!
 		data_base_dir = fullfile(data_root_str, 'Volumes', 'social_neuroscience_data');
+		
+		% local
+		data_base_dir = fullfile(data_root_str, 'Users', 'smoeller', 'DPZ');
 		data_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');
 	
 		
@@ -259,108 +271,101 @@ end
 good_target_sample_points_idx = find(good_target_sample_points_lidx);
 bad_target_sample_points_idx = find(good_target_sample_points_lidx == 0);
 
-%CLEAN-UP CURSOR
 
-
-
-
+% plot the different sample classes in different colors
 figure_handle = figure('Name', ['Roberta''s gaze visualizer: ', gaze_tracker_logfile_name, gaze_tracker_logfile_ext]);
-% subplot(2, 1, 2)
-plot(fix_target_x_list(:),fix_target_y_list(:),'s','MarkerSize',10,'MarkerFaceColor',[1 0 0]);
-
+plot(fix_target_x_list(:), fn_convert_eventide2_matlab_coord(fix_target_y_list(:)),'s','MarkerSize',10,'MarkerFaceColor',[1 0 0]);
 set(gca(), 'XLim', [(960-300) (960+300)], 'YLim', [(1080-500-200) (1080-500+400)]);
-
 hold on
 % full traces all points with lines in between
-plot(cal_eventide_gaze_x_list(:),cal_eventide_gaze_y_list_flipped(:),'b','LineWidth', 1, 'Color', [0.8 0.8 0.8])
+plot(cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)),'b','LineWidth', 1, 'Color', [0.8 0.8 0.8])
 % blue fixation points
-plot(cal_eventide_gaze_x_list(fixation_samples_idx), cal_eventide_gaze_y_list_flipped(fixation_samples_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'b', 'Marker', '+', 'Markersize', 1);
+plot(cal_eventide_gaze_x_list(fixation_samples_idx), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(fixation_samples_idx)), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'b', 'Marker', '+', 'Markersize', 1);
 % magenta, points exceeding the velocity threshold
-plot(cal_eventide_gaze_x_list(low_velocity_samples_idx), cal_eventide_gaze_y_list_flipped(low_velocity_samples_idx), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'm', 'Marker', '+', 'Markersize', 1);
+plot(cal_eventide_gaze_x_list(low_velocity_samples_idx), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(low_velocity_samples_idx)), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'm', 'Marker', '+', 'Markersize', 1);
 % points immediately after fixation point onsets, when the sunbject can not fixate
-plot(cal_eventide_gaze_x_list(bad_target_sample_points_idx),cal_eventide_gaze_y_list_flipped(bad_target_sample_points_idx), 'LineWidth',1, 'LineStyle', 'none', 'Color', 'r', 'Marker', '+', 'Markersize', 1);
+plot(cal_eventide_gaze_x_list(bad_target_sample_points_idx), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(bad_target_sample_points_idx)), 'LineWidth', 1, 'LineStyle', 'none', 'Color', 'r', 'Marker', '+', 'Markersize', 1);
 % surviving points
-plot(cal_eventide_gaze_x_list(fixation_target_visible_sample_idx),cal_eventide_gaze_y_list_flipped(fixation_target_visible_sample_idx),'LineWidth',1, 'LineStyle', 'none', 'Color', [0 0.8 0], 'Marker', '+', 'Markersize', 1);
+plot(cal_eventide_gaze_x_list(fixation_target_visible_sample_idx), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(fixation_target_visible_sample_idx)), 'LineWidth', 1, 'LineStyle', 'none', 'Color', [0 0.8 0], 'Marker', '+', 'Markersize', 1);
+%CLEAN-UP CURSOR
 
-
-
-
-
-nonzero_unique_fixation_target_idx = find(unique_fixation_targets);
+% pre allocate
 x_y_mouse_y_flipped = zeros([length(nonzero_unique_fixation_target_idx), 2]);
 
-cal_eventide_gaze_y_list_flipped = (tmp2_gaze_y .* -1) + 1080; %flipped
-fixation_target_position_table_flipped = [fixation_target_position_table(:,1), ((fixation_target_position_table(:,2) .* -1) + 1080)];
+%cal_eventide_gaze_y_list_flipped = (tmp2_gaze_y .* -1) + 1080; %flipped
+%fixation_target_position_table_flipped = [fixation_target_position_table(:,1), ((fixation_target_position_table(:,2) .* -1) + 1080)];
 
 for i_fix_target = 1 : length(find(unique_fixation_targets))
 	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
 	
 	title(['Select the center of the gaze sample cloud belonging to fixzation target ', num2str(unique_fixation_target_id), ', press enter after selection.']);
-	plot(fixation_target_position_table_flipped(unique_fixation_target_id, 1), fixation_target_position_table_flipped(unique_fixation_target_id, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'r', 'Marker', '+', 'Markersize', 15);
+	plot(fixation_target_position_table(unique_fixation_target_id, 1), fn_convert_eventide2_matlab_coord(fixation_target_position_table(unique_fixation_target_id, 2)), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'r', 'Marker', '+', 'Markersize', 12);
 	
 	[tmp_x_list, tmp_y_list]= getpts;
-	
 	if isempty(tmp_x_list)
 		tmp_x_list = NaN;
 		tmp_y_list = NaN;
 	end
 	
 	x_y_mouse_y_flipped(i_fix_target, 1) = tmp_x_list(end);
-
-    x_y_mouse_y_flipped(i_fix_target, 2) = tmp_y_list(end);
-
+    x_y_mouse_y_flipped(i_fix_target, 2) = tmp_y_list(end);	
 	
-	
-	plot(fixation_target_position_table_flipped(unique_fixation_target_id, 1), fixation_target_position_table_flipped(unique_fixation_target_id, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', '+', 'Markersize', 15);
-	
-plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', 'x', 'Markersize', 15);
+	plot(fixation_target_position_table(unique_fixation_target_id, 1), fn_convert_eventide2_matlab_coord(fixation_target_position_table(unique_fixation_target_id, 2)), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', '+', 'Markersize', 12);
+	plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 4, 'LineStyle', 'none', 'Color', 'k', 'Marker', 'x', 'Markersize', 15);
 end
-
-saveas (gcf,'Select the center of the gaze sample cloud belonging to fixation target.fig')
-
-%x_y_mouse = [x_y_mouse_y_flipped(:, 1), ((x_y_mouse_y_flipped(:,2) .* -1) + 1080)];
-x_y_mouse = [x_y_mouse_y_flipped(:, 1), x_y_mouse_y_flipped(:,2)];
 hold off
 xlim([(960-300) (960+300)]);
 ylim ([(1080-500-200) (1080-500+400)]);
+%axis equal
 
-nonzero_unique_fixation_target_idx = find(unique_fixation_targets);
 
+%saveas (gcf,'Select the center of the gaze sample cloud belonging to fixation target.fig')
+
+% the getpts coordinates are in matlab convention, so convert into eventIDE
+% space
+x_y_mouse = [x_y_mouse_y_flipped(:, 1), fn_convert_eventide2_matlab_coord(x_y_mouse_y_flipped(:,2))];
+
+
+% pre allocate
 euclidean_distance_array = zeros([size(cal_eventide_gaze_x_list, 1), length(nonzero_unique_fixation_target_idx)]);
-
-
-
+% calculate the distance of each sample to each fixation target position as
+% selected with getpts, so the center positions of the gaze clusters
+% assigned to each fixation position.
 for i_fix_target = 1 : length(find(unique_fixation_targets))
 	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
-	
-	euclidean_distance_array(:, unique_fixation_target_id) = sqrt(((cal_eventide_gaze_x_list - x_y_mouse_y_flipped(unique_fixation_target_id, 1)).^2 ) + ...
-																	((cal_eventide_gaze_y_list_flipped - x_y_mouse_y_flipped(unique_fixation_target_id, 2)).^2 ));
-	
+	euclidean_distance_array(:, unique_fixation_target_id) = sqrt(((cal_eventide_gaze_x_list - x_y_mouse(unique_fixation_target_id, 1)).^2 ) + ...
+																	((cal_eventide_gaze_y_list - x_y_mouse(unique_fixation_target_id, 2)).^2 ));
 	if (debug)
 		figure_h = figure('Name', ['FixationTarget_', num2str(unique_fixation_target_id)]);
 		histogram(euclidean_distance_array(:, unique_fixation_target_id), (0.00:1:650));
 	end
 end
 
-
-%histogram((euclidean_distance(:, :)),(0.00:1:650));
-
-
-% acceptable_radius_pix
+% find those samples that are close enough to the selected target position
+% cluster center points and are from the correct epochs
 points_close_2_fixation_centers_idx = [];
 distance_gaze_2_target_pix = [];
 for i_fix_target = 1 : length(find(unique_fixation_targets))
 	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
-	current_points_idx = find(euclidean_distance_array(:, unique_fixation_target_id) <= acceptable_radius_pix);
+	% all smaples close enough to the current slected cluster center
+	close_points_idx = find(euclidean_distance_array(:, unique_fixation_target_id) <= acceptable_radius_pix);
+	% all points when the corresponding target was actually displayed
+	current_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
+	% just the subset of trials where the samples where close enough to the
+	% displayed target's cluster center
+	current_points_idx = intersect(close_points_idx, current_target_samples_idx);
 	distance_gaze_2_target_pix = [distance_gaze_2_target_pix; euclidean_distance_array(current_points_idx, unique_fixation_target_id)];
 	points_close_2_fixation_centers_idx = [points_close_2_fixation_centers_idx; current_points_idx];
 end
-
+% these are unsorted, so get them in temporal order
 points_close_2_fixation_centers_idx = sort(points_close_2_fixation_centers_idx);
+good_points_close_2_fixation_centers_idx = intersect(good_target_sample_points_idx, points_close_2_fixation_centers_idx);
 
-tmp_target_selected_samples = [data_struct.data(points_close_2_fixation_centers_idx, ds_colnames.FixationPointX) data_struct.data(points_close_2_fixation_centers_idx, ds_colnames.FixationPointY)];
 
-tmp_gaze_selected_samples = [cal_eventide_gaze_x_list(points_close_2_fixation_centers_idx) cal_eventide_gaze_y_list(points_close_2_fixation_centers_idx)];
+% just plot the selected target samples that are close enough to the
+% cluster centers
+tmp_target_selected_samples = [data_struct.data(good_points_close_2_fixation_centers_idx, ds_colnames.FixationPointX) fn_convert_eventide2_matlab_coord(data_struct.data(good_points_close_2_fixation_centers_idx, ds_colnames.FixationPointY))];
+tmp_gaze_selected_samples = [cal_eventide_gaze_x_list(good_points_close_2_fixation_centers_idx) fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(good_points_close_2_fixation_centers_idx))];
 figure('Name', 'selected_samples');
 plot(tmp_target_selected_samples(:, 1), tmp_target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
 hold on
@@ -373,7 +378,7 @@ hold off
 % euclidean_distance-in_time <= velocity_threshold_pixels_per_sample
 
 selected_samples_idx = (1:1:size(euclidean_distance_array, 1))';
-selected_samples_idx = intersect(selected_samples_idx, points_close_2_fixation_centers_idx);
+selected_samples_idx = intersect(selected_samples_idx, good_points_close_2_fixation_centers_idx);
 
 % this here is pixel distance between samples over time!
 selected_samples_idx = intersect(selected_samples_idx, find(per_sample_euclidean_displacement_pix_list <= velocity_threshold_pixels_per_sample));
@@ -400,66 +405,53 @@ end
 
 
 % moving
-gaze_selected_samples = [data_struct.data(selected_samples_idx, ds_colnames.cal_eventide_gaze_x_list) data_struct.data(selected_samples_idx, ds_colnames.cal_eventide_gaze_y_list_flipped)];
 gaze_selected_samples = [cal_eventide_gaze_x_list(selected_samples_idx) cal_eventide_gaze_y_list(selected_samples_idx)];
 
-
-%
-
+% eyelink raw
 right_raw_gaze_selected_samples = [data_struct.data(selected_samples_idx, ds_colnames.Right_Eye_Raw_X) data_struct.data(selected_samples_idx, ds_colnames.Right_Eye_Raw_Y)];
 left_raw_gaze_selected_samples = [data_struct.data(selected_samples_idx, ds_colnames.Left_Eye_Raw_X) data_struct.data(selected_samples_idx, ds_colnames.Left_Eye_Raw_Y)];
-
 %fixed
 target_selected_samples = [data_struct.data(selected_samples_idx, ds_colnames.FixationPointX) data_struct.data(selected_samples_idx, ds_colnames.FixationPointY)];
 
 
-
-
-
+% calculate the actual registrations
 tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 tform_right_raw = fitgeotrans(target_selected_samples, right_raw_gaze_selected_samples, transformationType);
 tform_left_raw = fitgeotrans(target_selected_samples, left_raw_gaze_selected_samples, transformationType);
 
-
-save('tform.mat','tform');
-
-
-
-%[registered_gaze_selected_samples] = transformPointsForward(tform, target_selected_samples); 
-%[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
-%[registered_gaze_selected_samples] = transformPointsForward(tform, gaze_selected_samples); 
-[registered_gaze_selected_samples] = transformPointsInverse(tform, gaze_selected_samples); 
-
+% apply the registration to the whole x y data series
+registered_gaze_selected_samples = transformPointsInverse(tform, gaze_selected_samples); 
 registered_left_raw_gaze_selected_samples = transformPointsInverse(tform_left_raw, left_raw_gaze_selected_samples); 
 registered_right_raw_gaze_selected_samples = transformPointsInverse(tform_right_raw, right_raw_gaze_selected_samples); 
 
 
+% show results
 figure('Name', 'applied registration');
 
-plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+plot(target_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(target_selected_samples(:, 2)), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
 hold on
-plot(gaze_selected_samples(:, 1), gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
-plot(registered_gaze_selected_samples(:, 1), registered_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(gaze_selected_samples(:, 2)), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_gaze_selected_samples(:, 2)), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
 hold off
 
 saveas(gcf,'applied_registration.fig');
 
 left_right_raw_fh = figure('Name', 'Left/Right raw gaze samples re-registered');
 subplot(1, 2, 1);
-plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+plot(target_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(target_selected_samples(:, 2)), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
 hold on
-plot(left_raw_gaze_selected_samples(:, 1), left_raw_gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
-plot(registered_left_raw_gaze_selected_samples(:, 1), registered_left_raw_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(left_raw_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(left_raw_gaze_selected_samples(:, 2)), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_left_raw_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_left_raw_gaze_selected_samples(:, 2)), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
 hold off
 title('left eye');
 axis equal
 
 
 subplot(1, 2, 2);
-plot(target_selected_samples(:, 1), target_selected_samples(:, 2), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
+plot(target_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(target_selected_samples(:, 2)), 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '+', 'MarkerSize', 12);
 hold on
-plot(right_raw_gaze_selected_samples(:, 1), right_raw_gaze_selected_samples(:, 2), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
-plot(registered_right_raw_gaze_selected_samples(:, 1), registered_right_raw_gaze_selected_samples(:, 2), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(right_raw_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(right_raw_gaze_selected_samples(:, 2)), 'Color', [1 0 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
+plot(registered_right_raw_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_right_raw_gaze_selected_samples(:, 2)), 'Color', [0 0.8 0], 'LineWidth', 3, 'LineStyle', 'None', 'Marker', '.', 'MarkerSize', 1);
 hold off
 title('right eye');
 axis equal
@@ -471,7 +463,6 @@ write_out_figure(left_right_raw_fh, fullfile(gaze_tracker_logfile_path, 'left_ri
 timestamp_list.(mfilename).end = toc(timestamp_list.(mfilename).start);
 disp([mfilename, ' took: ', num2str(timestamp_list.(mfilename).end), ' seconds.']);
 disp([mfilename, ' took: ', num2str(timestamp_list.(mfilename).end / 60), ' minutes. Done...']);
-
 
 return
 end

@@ -162,11 +162,11 @@ if ~isequal(sorted_timestamp_list, timestamp_list);
 	timestamp_list = sorted_timestamp_list;
 end
 
+
+
 % extract the columns with the eventIDE coordinates for fixation target and the gaze data
 fix_target_x_list = (data_struct.data(:, ds_colnames.FixationPointX));
 fix_target_y_list = (data_struct.data(:, ds_colnames.FixationPointY));
-
-fix_target_y_list_flipped = fn_convert_eventide2_matlab_coord(fix_target_y_list);
 
 % extract the columns with the eventIDE coordinates for the gaze data
 % these are not guaranteed to employ the final/best eventIDE linear
@@ -193,11 +193,8 @@ raw_eventide_gaze_y_list = (eventide_gaze_y_list ./ calibration_gain_y_list) - c
 % should be at least acceptable. Note, we only do this so loading and
 % displaying gaze and target data in the same plot looks reasonable and
 % that we can approximate the instantaneous velocity.
-cal_eventide_gaze_x_list = (raw_eventide_gaze_x_list * calibration.gain_x) + calibration.offset_x;
-cal_eventide_gaze_y_list = (raw_eventide_gaze_y_list * calibration.gain_y) + calibration.offset_y;
-
-% replace later
-cal_eventide_gaze_y_list_flipped = fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list);
+cal_eventide_gaze_x_list = (raw_eventide_gaze_x_list + calibration.offset_x) .* calibration.gain_x;
+cal_eventide_gaze_y_list = (raw_eventide_gaze_y_list + calibration.offset_y) .* calibration.gain_y;
 
 
 % calculate the pixel displacement between consecutive samples

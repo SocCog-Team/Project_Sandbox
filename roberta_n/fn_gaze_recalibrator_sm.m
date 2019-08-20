@@ -2,18 +2,14 @@ function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, veloc
 %FN_GAZE_RECALIBRATOR Analyse simple dot following gaze mapping data to
 %generate better registration matrices to convert "raw" gaze data into
 %eventIDE pixel coordinates
-%   The main idea behind this function is to first associate known taget
+%   The main idea behind this function is to first associate known target
 %   positions with gaze samples when the subject fixated that target and
 %   then use these as control point pairs to feed matlab's fitgeotrans
 %   function to get mapping "tforms" that allow to get a better
 %   registration between measured sample coordinates and "real" screen
 %   coordinates.
 
-
 %TODO:
-%	save and load the selected fixation position cluster centern
-%	show the size of the close enough points
-%	save pdfs
 %	save tform matrices
 
 
@@ -61,6 +57,10 @@ if ~exist('transformationType', 'var') || isempty(transformationType)
 	transformationType = 'affine';
 % 	transformationType = 'polynomial';
 end
+
+transformationType_list = {'affine', 'polynomial', 'pwl', 'lwm'};
+
+
 
 % this defines the registration method to use to generate the mapping
 % between identified sample positions and corresponding target positions
@@ -469,14 +469,49 @@ selected_samples_idx = intersect(selected_samples_idx, find(fixation_target.by_s
 % selected samples
 
 % moving (matlab coordinates)
-gaze_selected_samples = [cal_eventide_gaze_x_list(selected_samples_idx) cal_eventide_gaze_y_list(selected_samples_idx)];
+all_gaze_selected_samples = [cal_eventide_gaze_x_list(:) cal_eventide_gaze_y_list(:)];
+gaze_selected_samples = all_gaze_selected_samples(selected_samples_idx, :);
 % fixed (malab coordinates)
-target_selected_samples = [data_struct.data(selected_samples_idx, ds_colnames.FixationPointX) data_struct.data(selected_samples_idx, ds_colnames.FixationPointY)];
+all_target_selected_samples = [data_struct.data(:, ds_colnames.FixationPointX) data_struct.data(:, ds_colnames.FixationPointY)];
+target_selected_samples = all_target_selected_samples(selected_samples_idx, :);
+
+% for pwl/lwm try to only select the selectd samples closest to the
+% respective cluster center/ the cluster median position
+cur_selected_samples_pwl_lwm_idx = [];
+for i_fix_target = 1 : length(find(unique_fixation_targets))
+	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
+	current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
+	valid_samples_for_current_fixtargID = intersect(selected_samples_idx, current_fixation_target_samples_idx);
+	if ~isempty(valid_samples_for_current_fixtargID)
+		% find the sample closest to the current cluster center
+		[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
+		cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];
+	end
+end
+
+n_control_points = length(cur_selected_samples_pwl_lwm_idx);
+
 % calculate the registration
-if ~strcmp(transformationType, 'polynomial')
-	tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
-else
-	tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
+switch (transformationType)
+	case 'polynomial'
+		if (n_control_points < 15) && polynomial_degree == 4
+			polynomial_degree = polynomial_degree - 1;
+		end
+		if (n_control_points < 10) && polynomial_degree == 3
+			polynomial_degree = polynomial_degree - 1;
+		end
+		% for polynomial_degree we need 6 control points but simply fail		
+		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
+	case 'pwl'
+		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
+	case 'lwm'
+		if 	polynomial_degree > n_control_points
+			disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
+			polynomial_degree = n_control_points;
+		end
+		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+	otherwise
+		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 end
 
 % apply the registration to the whole x y data series
@@ -514,14 +549,49 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 	all_gaze_selected_samples = [data_struct.data(:, ds_colnames.(cur_X_col_name)) data_struct.data(:, ds_colnames.(cur_Y_col_name))];
 	current_gaze_samples = all_gaze_selected_samples(cur_selected_samples_idx, :);
 	% fixed (eventIDE coordinates
-	current_target_selected_samples = [data_struct.data(cur_selected_samples_idx, ds_colnames.FixationPointX) data_struct.data(cur_selected_samples_idx, ds_colnames.FixationPointY)];
+	all_target_selected_samples = [data_struct.data(:, ds_colnames.FixationPointX) data_struct.data(:, ds_colnames.FixationPointY)];
+	current_target_selected_samples = all_target_selected_samples(cur_selected_samples_idx, :);
 	% calculate the registration
 	
-	if ~strcmp(transformationType, 'polynomial')
-		current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
-	else
-		current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
+	% for pwl/lwm try to only select the selectd samples closest to the
+	% respective cluster center/ the cluster median position
+	cur_selected_samples_pwl_lwm_idx = [];
+	for i_fix_target = 1 : length(find(unique_fixation_targets))
+		unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
+		current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
+		valid_samples_for_current_fixtargID = intersect(cur_selected_samples_idx, current_fixation_target_samples_idx);
+		if ~isempty(valid_samples_for_current_fixtargID)
+			% find the sample closest to the current cluster center
+			[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
+			cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];	
+		end
 	end
+	n_control_points = length(cur_selected_samples_pwl_lwm_idx);
+	
+	
+	switch (transformationType)
+		case 'polynomial'
+			if (n_control_points < 15) && polynomial_degree == 4
+				polynomial_degree = polynomial_degree - 1;
+			end
+			if (n_control_points < 10) && polynomial_degree == 3
+				polynomial_degree = polynomial_degree - 1;
+			end
+			% for polynomial_degree we need 6 control points but simply fail
+			
+			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
+		case 'pwl'
+			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
+		case 'lwm'
+			if 	polynomial_degree > n_control_points
+				disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
+				polynomial_degree = n_control_points;
+			end		
+			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+		otherwise
+			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
+	end
+	
 	% apply the registration to the whole x y data series
 	current_registered_gaze_selected_samples = transformPointsInverse(current_tform, all_gaze_selected_samples);
 	

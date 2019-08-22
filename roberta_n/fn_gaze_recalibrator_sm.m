@@ -490,7 +490,7 @@ for i_fix_target = 1 : length(find(unique_fixation_targets))
 end
 
 n_control_points = length(cur_selected_samples_pwl_lwm_idx);
-
+transformationType_string = transformationType;
 % calculate the registration
 switch (transformationType)
 	case 'polynomial'
@@ -500,7 +500,8 @@ switch (transformationType)
 		if (n_control_points < 10) && polynomial_degree == 3
 			polynomial_degree = polynomial_degree - 1;
 		end
-		% for polynomial_degree we need 6 control points but simply fail		
+		% for polynomial_degree we need 6 control points but simply fail
+		transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
 		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
 	case 'pwl'
 		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
@@ -509,6 +510,7 @@ switch (transformationType)
 			disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
 			polynomial_degree = n_control_points;
 		end
+		transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
 		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
 	otherwise
 		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
@@ -519,7 +521,7 @@ registered_gaze_selected_samples = transformPointsInverse(tform, [cal_eventide_g
 
 % show results
 cur_data_name = 'eventIDE_Gaze';
-cur_data_fh = figure('Name', [cur_data_name, ': Re-registration']);
+cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
 fnFormatDefaultAxes(DefaultAxesType);
 [output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
 set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
@@ -528,7 +530,7 @@ selected_samples_ah = fn_plot_selected_and_reregistered_samples_over_targets(...
 	data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), selected_samples_idx, target_color_spec, ...
 	cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), selected_samples_idx, [1 0 0], ...
 	registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_gaze_selected_samples(:, 2)), selected_samples_idx, [0 1 0]);
-title(cur_data_name, 'Interpreter', 'None', 'FontSize', 12);
+title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
 write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
 
 
@@ -568,7 +570,7 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 	end
 	n_control_points = length(cur_selected_samples_pwl_lwm_idx);
 	
-	
+	transformationType_string = transformationType;
 	switch (transformationType)
 		case 'polynomial'
 			if (n_control_points < 15) && polynomial_degree == 4
@@ -578,7 +580,7 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 				polynomial_degree = polynomial_degree - 1;
 			end
 			% for polynomial_degree we need 6 control points but simply fail
-			
+			transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
 			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
 		case 'pwl'
 			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
@@ -586,7 +588,8 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 			if 	polynomial_degree > n_control_points
 				disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
 				polynomial_degree = n_control_points;
-			end		
+			end
+			transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
 			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
 		otherwise
 			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
@@ -597,7 +600,7 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 	
 	% show results
 	cur_data_name = current_data_col_name;
-	cur_data_fh = figure('Name', [cur_data_name, ': Re-registration']);
+	cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
 	fnFormatDefaultAxes(DefaultAxesType);
 	[output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
 	set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
@@ -606,7 +609,7 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 		data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), cur_selected_samples_idx, target_color_spec, ...
 		cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), cur_selected_samples_idx, [1 0 0], ...
 		current_registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(current_registered_gaze_selected_samples(:, 2)), cur_selected_samples_idx, [0 1 0]);
-	title(cur_data_name, 'Interpreter', 'None', 'FontSize', 12);
+	title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
 	write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
 end
 

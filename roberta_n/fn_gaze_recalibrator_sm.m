@@ -1,4 +1,4 @@
-function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree)
+function [ registration_struct ] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree)
 %FN_GAZE_RECALIBRATOR Analyse simple dot following gaze mapping data to
 %generate better registration matrices to convert "raw" gaze data into
 %eventIDE pixel coordinates
@@ -10,7 +10,10 @@ function [] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, veloc
 %   coordinates.
 
 %TODO:
-%	save tform matrices
+%	save tform matrices. reg.affine.eyelink.Right_Eye_Raw.tform ...
+%		as sessinID.subject.gaze_registration.mat in the days directory, so
+%		../../
+% allow unsupervised run, if mouse point mat file already exists
 
 
 tictoc_timestamp_list.(mfilename).start = tic;
@@ -18,6 +21,8 @@ disp(['Starting: ', mfilename]);
 dbstop if error
 fq_mfilename = mfilename('fullpath');
 mfilepath = fileparts(fq_mfilename);
+
+registration_struct = struct();
 
 % eventIDE sets the top left corner as (0,0), matlab sets the bottom left
 % corner to (0,0) to make the up down directions in matlab appear correct
@@ -55,10 +60,17 @@ end
 % between identified sample positions and corresponding target positions
 if ~exist('transformationType', 'var') || isempty(transformationType)
 	transformationType = 'affine';
-% 	transformationType = 'polynomial';
+	% 	transformationType = 'polynomial';
+	transformationType = {'affine', 'polynomial', 'pwl', 'lwm'};
 end
 
-transformationType_list = {'affine', 'polynomial', 'pwl', 'lwm'};
+% make sure things are as expected
+if ~iscell(transformationType)
+	transformationType_list = {transformationType};
+else
+	transformationType_list = transformationType;
+end
+
 
 
 
@@ -114,7 +126,6 @@ end
 
 [gaze_tracker_logfile_path, gaze_tracker_logfile_name, gaze_tracker_logfile_ext] = fileparts(gaze_tracker_logfile_FQN);
 
-
 % different gaze tracker produce different tracker log files, to handle
 % these differences allow the user to explicitly specify the type
 if ~exist('tracker_type', 'var') || isempty(tracker_type)
@@ -126,7 +137,6 @@ if ~exist('tracker_type', 'var') || isempty(tracker_type)
 		error([mfilename, ': Tracker type pupillabs not implemented yet.']);
 	end
 end
-
 
 % define tracker specific information
 switch(tracker_type)
@@ -143,7 +153,14 @@ switch(tracker_type)
 		error(['tracker_type: ', tracker_type, ' not yet supported.']);
 end
 
-
+% prepare storing the meat information to te output file
+registration_struct.info.gaze_tracker_logfile_FQN = gaze_tracker_logfile_FQN;
+registration_struct.info.tracker_type = tracker_type;
+registration_struct.info.velocity_threshold_pixels_per_sample = velocity_threshold_pixels_per_sample;
+registration_struct.info.saccade_allowance_time_ms = saccade_allowance_time_ms;
+registration_struct.info.acceptable_radius_pix = acceptable_radius_pix;
+registration_struct.info.transformationType_list = transformationType_list;
+registration_struct.info.polynomial_degree = polynomial_degree;
 
 % load the data	(might take a while)
 data_struct = fnParseEventIDETrackerLog_v01(gaze_tracker_logfile_FQN, ';', [], []);
@@ -392,8 +409,11 @@ save(cluster_center_list_fqn, 'x_y_mouse_y_flipped');
 % the getpts coordinates are in matlab convention, so convert into eventIDE
 % space
 x_y_mouse = [x_y_mouse_y_flipped(:, 1), fn_convert_eventide2_matlab_coord(x_y_mouse_y_flipped(:,2))];
+%x_y_mouse = [x_y_mouse_y_flipped(:, 1),
+%fn_convert_eventide2_matlab_coord(x_y_mouse_y_flipped(:,2), [], [], 'backward')]; % same as above
 
-
+registration_struct.reg_data.x_y_mouse_y_flipped = x_y_mouse_y_flipped;
+registration_struct.reg_data.x_y_mouse = x_y_mouse;
 
 
 
@@ -490,87 +510,13 @@ for i_fix_target = 1 : length(find(unique_fixation_targets))
 end
 
 n_control_points = length(cur_selected_samples_pwl_lwm_idx);
-transformationType_string = transformationType;
-% calculate the registration
-switch (transformationType)
-	case 'polynomial'
-		if (n_control_points < 15) && polynomial_degree == 4
-			polynomial_degree = polynomial_degree - 1;
-		end
-		if (n_control_points < 10) && polynomial_degree == 3
-			polynomial_degree = polynomial_degree - 1;
-		end
-		% for polynomial_degree we need 6 control points but simply fail
-		transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
-		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
-	case 'pwl'
-		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
-	case 'lwm'
-		if 	polynomial_degree > n_control_points
-			disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
-			polynomial_degree = n_control_points;
-		end
-		transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
-		tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
-	otherwise
-		tform = fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
-end
-
-% apply the registration to the whole x y data series
-registered_gaze_selected_samples = transformPointsInverse(tform, [cal_eventide_gaze_x_list cal_eventide_gaze_y_list]);
-
-% show results
-cur_data_name = 'eventIDE_Gaze';
-cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
-fnFormatDefaultAxes(DefaultAxesType);
-[output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
-set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
-
-selected_samples_ah = fn_plot_selected_and_reregistered_samples_over_targets(...
-	data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), selected_samples_idx, target_color_spec, ...
-	cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), selected_samples_idx, [1 0 0], ...
-	registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_gaze_selected_samples(:, 2)), selected_samples_idx, [0 1 0]);
-title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
-write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
 
 
-%TODO: write out tform with associated information
-
-
-for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
-	current_data_col_name = gaze_col_name_list.stem{i_date_col_stem};
-	cur_X_col_name = gaze_col_name_list.X{i_date_col_stem};
-	cur_Y_col_name = gaze_col_name_list.Y{i_date_col_stem};
-	
-	% make sure to only include samples that are valid for the given data
-	% column
-	valid_eye_raw_idx = find(data_struct.data(:, ds_colnames.(cur_X_col_name)) ~= out_of_bounds_marker_value);
-	cur_selected_samples_idx = intersect(selected_samples_idx, valid_eye_raw_idx);
-	
-	% moving (eventIDE coordinates)
-	all_gaze_selected_samples = [data_struct.data(:, ds_colnames.(cur_X_col_name)) data_struct.data(:, ds_colnames.(cur_Y_col_name))];
-	current_gaze_samples = all_gaze_selected_samples(cur_selected_samples_idx, :);
-	% fixed (eventIDE coordinates
-	all_target_selected_samples = [data_struct.data(:, ds_colnames.FixationPointX) data_struct.data(:, ds_colnames.FixationPointY)];
-	current_target_selected_samples = all_target_selected_samples(cur_selected_samples_idx, :);
-	% calculate the registration
-	
-	% for pwl/lwm try to only select the selectd samples closest to the
-	% respective cluster center/ the cluster median position
-	cur_selected_samples_pwl_lwm_idx = [];
-	for i_fix_target = 1 : length(find(unique_fixation_targets))
-		unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
-		current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
-		valid_samples_for_current_fixtargID = intersect(cur_selected_samples_idx, current_fixation_target_samples_idx);
-		if ~isempty(valid_samples_for_current_fixtargID)
-			% find the sample closest to the current cluster center
-			[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
-			cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];	
-		end
-	end
-	n_control_points = length(cur_selected_samples_pwl_lwm_idx);
+for i_transformationType = 1 : length(transformationType_list)
+	transformationType = transformationType_list{i_transformationType};
 	
 	transformationType_string = transformationType;
+	% calculate the registration
 	switch (transformationType)
 		case 'polynomial'
 			if (n_control_points < 15) && polynomial_degree == 4
@@ -581,38 +527,142 @@ for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
 			end
 			% for polynomial_degree we need 6 control points but simply fail
 			transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
-			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
+			tform = fn_fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
 		case 'pwl'
-			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
+			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
 		case 'lwm'
+			% lwm needs sensibly spaced control points, does not work yet
+
+			polynomial_degree = 9;
+			
 			if 	polynomial_degree > n_control_points
 				disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
 				polynomial_degree = n_control_points;
 			end
 			transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
-			current_tform = fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
 		otherwise
-			current_tform = fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
+			tform = fn_fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 	end
 	
-	% apply the registration to the whole x y data series
-	current_registered_gaze_selected_samples = transformPointsInverse(current_tform, all_gaze_selected_samples);
+	if ~isempty(tform)
+		% apply the registration to the whole x y data series
+		registered_gaze_selected_samples = transformPointsInverse(tform, [cal_eventide_gaze_x_list cal_eventide_gaze_y_list]);
+		
+		% show results
+		cur_data_name = 'eventIDE_Gaze';
+		cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
+		fnFormatDefaultAxes(DefaultAxesType);
+		[output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
+		set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
+		
+		selected_samples_ah = fn_plot_selected_and_reregistered_samples_over_targets(...
+			data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), selected_samples_idx, target_color_spec, ...
+			cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), selected_samples_idx, [1 0 0], ...
+			registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_gaze_selected_samples(:, 2)), selected_samples_idx, [0 1 0]);
+		title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
+		write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
+	end
 	
-	% show results
-	cur_data_name = current_data_col_name;
-	cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
-	fnFormatDefaultAxes(DefaultAxesType);
-	[output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
-	set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
+	%TODO: write out tform with associated information
 	
-	selected_samples_ah = fn_plot_selected_and_reregistered_samples_over_targets(...
-		data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), cur_selected_samples_idx, target_color_spec, ...
-		cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), cur_selected_samples_idx, [1 0 0], ...
-		current_registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(current_registered_gaze_selected_samples(:, 2)), cur_selected_samples_idx, [0 1 0]);
-	title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
-	write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
+	
+	for i_date_col_stem = 1 : length(gaze_col_name_list.stem)
+		current_data_col_name = gaze_col_name_list.stem{i_date_col_stem};
+		cur_X_col_name = gaze_col_name_list.X{i_date_col_stem};
+		cur_Y_col_name = gaze_col_name_list.Y{i_date_col_stem};
+		
+		% make sure to only include samples that are valid for the given data
+		% column
+		valid_eye_raw_idx = find(data_struct.data(:, ds_colnames.(cur_X_col_name)) ~= out_of_bounds_marker_value);
+		cur_selected_samples_idx = intersect(selected_samples_idx, valid_eye_raw_idx);
+		
+		% moving (eventIDE coordinates)
+		all_gaze_selected_samples = [data_struct.data(:, ds_colnames.(cur_X_col_name)) data_struct.data(:, ds_colnames.(cur_Y_col_name))];
+		current_gaze_samples = all_gaze_selected_samples(cur_selected_samples_idx, :);
+		% fixed (eventIDE coordinates
+		all_target_selected_samples = [data_struct.data(:, ds_colnames.FixationPointX) data_struct.data(:, ds_colnames.FixationPointY)];
+		current_target_selected_samples = all_target_selected_samples(cur_selected_samples_idx, :);
+		% calculate the registration
+		
+		% for pwl/lwm try to only select the selectd samples closest to the
+		% respective cluster center/ the cluster median position
+		cur_selected_samples_pwl_lwm_idx = [];
+		for i_fix_target = 1 : length(find(unique_fixation_targets))
+			unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
+			current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
+			valid_samples_for_current_fixtargID = intersect(cur_selected_samples_idx, current_fixation_target_samples_idx);
+			if ~isempty(valid_samples_for_current_fixtargID)
+				% find the sample closest to the current cluster center
+				[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
+				cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];
+			end
+		end
+		n_control_points = length(cur_selected_samples_pwl_lwm_idx);
+		
+		transformationType_string = transformationType;
+		switch (transformationType)
+			case 'polynomial'
+				if (n_control_points < 15) && polynomial_degree == 4
+					polynomial_degree = polynomial_degree - 1;
+				end
+				if (n_control_points < 10) && polynomial_degree == 3
+					polynomial_degree = polynomial_degree - 1;
+				end
+				% for polynomial_degree we need 6 control points but simply fail
+				transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
+				current_tform = fn_fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
+			case 'pwl'
+				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
+			case 'lwm'
+				if 	polynomial_degree > n_control_points
+					disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
+					polynomial_degree = n_control_points;
+				end
+				transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
+				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+			otherwise
+				current_tform = fn_fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
+		end
+		
+		if ~isempty(current_tform)
+			
+			% apply the registration to the whole x y data series
+			current_registered_gaze_selected_samples = transformPointsInverse(current_tform, all_gaze_selected_samples);
+			
+			% show results
+			cur_data_name = current_data_col_name;
+			cur_data_fh = figure('Name', [cur_data_name, ': Re-registration, (', transformationType_string, ')']);
+			fnFormatDefaultAxes(DefaultAxesType);
+			[output_rect] = fnFormatPaperSize(DefaultPaperSizeType, gcf, output_rect_fraction);
+			set(gcf(), 'Units', 'centimeters', 'Position', output_rect, 'PaperPosition', output_rect);
+			
+			selected_samples_ah = fn_plot_selected_and_reregistered_samples_over_targets(...
+				data_struct.data(:, ds_colnames.FixationPointX), fn_convert_eventide2_matlab_coord(data_struct.data(:, ds_colnames.FixationPointY)), cur_selected_samples_idx, target_color_spec, ...
+				cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), cur_selected_samples_idx, [1 0 0], ...
+				current_registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(current_registered_gaze_selected_samples(:, 2)), cur_selected_samples_idx, [0 1 0]);
+			title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
+			write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
+			
+			registration_struct.(transformationType).(cur_data_name).tform = current_tform;
+			registration_struct.(transformationType).(cur_data_name).colnames = {cur_X_col_name, cur_Y_col_name};
+			registration_struct.(transformationType).(cur_data_name).selected_samples_idx = cur_selected_samples_idx;
+			
+			switch transformationType
+				case 'polynomial'
+					registration_struct.(transformationType).(cur_data_name).polynomial_degree = polynomial_degree;
+				case 'lwm'
+					registration_struct.(transformationType).(cur_data_name).lwm_n_points = polynomial_degree;
+					registration_struct.(transformationType).(cur_data_name).cur_selected_samples_pwl_lwm_idx = cur_selected_samples_pwl_lwm_idx;
+				case 'pwl'
+					registration_struct.(transformationType).(cur_data_name).cur_selected_samples_pwl_lwm_idx = cur_selected_samples_pwl_lwm_idx;					
+				end
+		end
+	end
+	
 end
 
+%save(fullfile(gaze_tracker_logfile_path, gaze_tracker_logfile_name), 'registration_struct');
 
 
 % how long did it take?
@@ -729,18 +779,20 @@ if ~exist('local_offset', 'var') ||	isempty(local_offset)
 	local_offset = 1080;
 end
 
-if ~exist('direction', 'var') ||	isempty(direction)
+if ~exist('direction', 'var') || isempty(direction)
 	direction = 'forward';
 end
 
+% note forward and inverse are the identical operation
 switch (direction)
 	case 'forward'
 		converted_coord_list = (input_coord_list * local_scale) + local_offset;
 	case {'inverse', 'backward'}
-		converted_coord_list = (input_coord_list / local_scale) - local_offset;
+		converted_coord_list = (input_coord_list - local_offset) ./ local_scale;
 	otherwise
 		error(['Unknown direction (', direction, ') encountered, only forward and inverse are defined.']);
 end
+
 return
 end
 
@@ -1096,6 +1148,28 @@ reg_sample_ah = plot(reg_sample_x_list(reg_valid_sample_idx), reg_sample_y_list(
 hold off
 %alpha(top_target_ah, 0.33);
 cur_ah = gca();
+
+return
+end
+
+
+function [ tform ] = fn_fitgeotrans(fixed_points, moving_points, transformationType, polynomial_degree)
+tform = [];
+
+% some transformationType require non-colinear points so try by catch
+% failures gracefully, we simply ignore such transformationTypes
+try	
+	if (nargin == 3)
+		tform = fitgeotrans(fixed_points, moving_points, transformationType);
+	end
+	if (nargin == 4)
+		tform = fitgeotrans(fixed_points, moving_points, transformationType, polynomial_degree);
+	end
+catch ME
+	disp(ME);
+	tform = [];
+	disp('tform invalid, returning empty tform.');
+end
 
 return
 end

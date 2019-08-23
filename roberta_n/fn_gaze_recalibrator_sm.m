@@ -1,4 +1,4 @@
-function [ registration_struct ] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree)
+function [ registration_struct ] = fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree, lwm_N)
 %FN_GAZE_RECALIBRATOR Analyse simple dot following gaze mapping data to
 %generate better registration matrices to convert "raw" gaze data into
 %eventIDE pixel coordinates
@@ -80,11 +80,10 @@ if ~exist('polynomial_degree', 'var') || isempty(polynomial_degree)
 	polynomial_degree = 2;
 end
 
-
-if ~strcmp(transformationType, 'polynomial')
-	polynomial_degree_string = '',
-else
-	polynomial_degree_string = ['.', num2str(polynomial_degree)];
+% this defines the registration method to use to generate the mapping
+% between identified sample positions and corresponding target positions
+if ~exist('lwm_N', 'var') || isempty(lwm_N)
+	lwm_N = 10;
 end
 
 
@@ -153,8 +152,16 @@ switch(tracker_type)
 		error(['tracker_type: ', tracker_type, ' not yet supported.']);
 end
 
+sessionID = fn_get_sessionID_from_SCP_path(gaze_tracker_logfile_FQN, '.sessiondir');
+[side, tracker_elementID] = fn_get_side_from_tracker_logfile_name(gaze_tracker_logfile_FQN);
+subject_name = fn_get_subject_name_for_side(sessionID, side);
+
 % prepare storing the meat information to te output file
 registration_struct.info.gaze_tracker_logfile_FQN = gaze_tracker_logfile_FQN;
+registration_struct.info.sessionID = sessionID;
+registration_struct.info.side = side;
+registration_struct.info.tracker_elementID = tracker_elementID;
+registration_struct.info.subject_name = subject_name;
 registration_struct.info.tracker_type = tracker_type;
 registration_struct.info.velocity_threshold_pixels_per_sample = velocity_threshold_pixels_per_sample;
 registration_struct.info.saccade_allowance_time_ms = saccade_allowance_time_ms;
@@ -516,6 +523,8 @@ for i_transformationType = 1 : length(transformationType_list)
 	transformationType = transformationType_list{i_transformationType};
 	
 	transformationType_string = transformationType;
+	
+	output_degree_string = '';
 	% calculate the registration
 	switch (transformationType)
 		case 'polynomial'
@@ -527,19 +536,18 @@ for i_transformationType = 1 : length(transformationType_list)
 			end
 			% for polynomial_degree we need 6 control points but simply fail
 			transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
+			output_degree_string = ['.', num2str(polynomial_degree)];
 			tform = fn_fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType, polynomial_degree);
 		case 'pwl'
 			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
 		case 'lwm'
-			% lwm needs sensibly spaced control points, does not work yet
-
-			polynomial_degree = 9;
-			
-			if 	polynomial_degree > n_control_points
-				disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
-				polynomial_degree = n_control_points;
+			% lwm needs sensibly spaced control points, does not work yet			
+			if 	lwm_N > n_control_points
+				disp(['Selected number of lwm control points (', num2str(lwm_N),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
+				lwm_N = n_control_points;
 			end
-			transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
+			transformationType_string = [transformationType_string, ' (n: ', num2str(lwm_N),')'];
+			output_degree_string = ['.', num2str(lwm_N)];
 			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
 		otherwise
 			tform = fn_fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
@@ -561,7 +569,7 @@ for i_transformationType = 1 : length(transformationType_list)
 			cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), selected_samples_idx, [1 0 0], ...
 			registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(registered_gaze_selected_samples(:, 2)), selected_samples_idx, [0 1 0]);
 		title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
-		write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
+		write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, output_degree_string, '.', cur_data_name, '.pdf']));
 	end
 	
 	%TODO: write out tform with associated information
@@ -601,6 +609,7 @@ for i_transformationType = 1 : length(transformationType_list)
 		n_control_points = length(cur_selected_samples_pwl_lwm_idx);
 		
 		transformationType_string = transformationType;
+		output_degree_string = '';
 		switch (transformationType)
 			case 'polynomial'
 				if (n_control_points < 15) && polynomial_degree == 4
@@ -611,6 +620,7 @@ for i_transformationType = 1 : length(transformationType_list)
 				end
 				% for polynomial_degree we need 6 control points but simply fail
 				transformationType_string = [transformationType_string, ' (degree: ', num2str(polynomial_degree),')'];
+				output_degree_string = ['.', num2str(polynomial_degree)];
 				current_tform = fn_fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType, polynomial_degree);
 			case 'pwl'
 				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType);
@@ -619,6 +629,7 @@ for i_transformationType = 1 : length(transformationType_list)
 					disp(['Selected number of lwm control points (', num2str(polynomial_degree),') larger than number of control point pairs (', num2str(n_control_points), '). Reducing to ', num2str(n_control_points)]);
 					polynomial_degree = n_control_points;
 				end
+				output_degree_string = ['.', num2str(lwm_N)];
 				transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
 				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
 			otherwise
@@ -642,7 +653,7 @@ for i_transformationType = 1 : length(transformationType_list)
 				cal_eventide_gaze_x_list(:), fn_convert_eventide2_matlab_coord(cal_eventide_gaze_y_list(:)), cur_selected_samples_idx, [1 0 0], ...
 				current_registered_gaze_selected_samples(:, 1), fn_convert_eventide2_matlab_coord(current_registered_gaze_selected_samples(:, 2)), cur_selected_samples_idx, [0 1 0]);
 			title([cur_data_name, ': ', transformationType_string], 'Interpreter', 'None', 'FontSize', 12);
-			write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, polynomial_degree_string, '.', cur_data_name, '.pdf']));
+			write_out_figure(cur_data_fh, fullfile(gaze_tracker_logfile_path, [tracker_type, '.re-registered.', transformationType, output_degree_string, '.', cur_data_name, '.pdf']));
 			
 			registration_struct.(transformationType).(cur_data_name).tform = current_tform;
 			registration_struct.(transformationType).(cur_data_name).colnames = {cur_X_col_name, cur_Y_col_name};
@@ -662,7 +673,12 @@ for i_transformationType = 1 : length(transformationType_list)
 	
 end
 
-%save(fullfile(gaze_tracker_logfile_path, gaze_tracker_logfile_name), 'registration_struct');
+% construct the output name
+output_mat_filename = ['GAZEREG.SID_', sessionID, '.SIDE_', side, '.SUBJECT', subject_name, '.', tracker_type, '.TRACKERELEMENTID_', tracker_elementID, '.mat'];
+% save to the current directory
+save(fullfile(gaze_tracker_logfile_path, output_mat_filename), 'registration_struct');
+% save to the day's directory.
+save(fullfile(gaze_tracker_logfile_path, '..', '..', output_mat_filename), 'registration_struct');
 
 
 % how long did it take?
@@ -1169,6 +1185,75 @@ catch ME
 	disp(ME);
 	tform = [];
 	disp('tform invalid, returning empty tform.');
+end
+
+return
+end
+
+
+function [ sessionID ] = fn_get_sessionID_from_SCP_path(gaze_tracker_logfile_FQN, session_marker_string)
+sessionID = [];
+
+% early out
+if isempty(regexp(gaze_tracker_logfile_FQN, session_marker_string))
+	error(['Could not extract the sessionID from: ', gaze_tracker_logfile_FQN]);
+	return
+end
+
+% start
+[cur_path, cur_name, cur_ext] = fileparts(gaze_tracker_logfile_FQN);
+
+% just traverse the path from the back and return the name that contains
+% the session_marker_string
+while ~isempty(cur_path)
+	if strcmp(cur_ext, session_marker_string)
+		sessionID = cur_name;
+		return
+	end
+	% next round
+	[cur_path, cur_name, cur_ext] = fileparts(cur_path);
+end
+
+return
+end
+
+
+function [ side, trackerID_string ] = fn_get_side_from_tracker_logfile_name(gaze_tracker_logfile_FQN)
+side = [];
+trackerID_string = [];
+[ ~, name, ~] = fileparts(gaze_tracker_logfile_FQN);
+
+identifier_list = {'EyeLinkProxyTrackerA', 'PupilLabsTrackerA', 'PupilLabsTrackerB', 'EyeLinkProxyTrackerB'};
+side_list = {'A', 'A', 'B', 'B'};
+
+for i_identifier = 1 : length(identifier_list)
+	cur_identifier = identifier_list{i_identifier};
+	if ~isempty(regexp(name, cur_identifier))
+		side = side_list{i_identifier};
+		trackerID_string = cur_identifier;
+	end
+end
+
+
+if isempty(side)
+	error('Fix me, just add the tracker identifier to identifier_list');
+end
+
+return
+end
+
+function [ subject_name ] = fn_get_subject_name_for_side(sessionID, side)
+subject_name = [];
+dot_idx = find(sessionID == '.');
+
+subject_side_prefix = ['.', side, '_'];
+
+anchor_idx = regexp(sessionID, subject_side_prefix);
+
+if ~isempty(anchor_idx)
+	next_dot_idx = find(dot_idx > anchor_idx);
+	next_dot_idx = next_dot_idx(1);
+	subject_name = sessionID(anchor_idx+3:dot_idx(next_dot_idx) -1);
 end
 
 return

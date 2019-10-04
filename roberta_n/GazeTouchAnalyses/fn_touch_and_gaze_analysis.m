@@ -145,8 +145,6 @@ t_form = load(gazereg_FQN);
 registered_left_eye_gaze_samples = transformPointsInverse(t_form.registration_struct.polynomial.Left_Eye_Raw.tform, [(data_struct_extract.data(:,data_struct_extract.cn.Left_Eye_Raw_X)) (data_struct_extract.data(:,data_struct_extract.cn.Left_Eye_Raw_Y))]);
 registered_right_eye_gaze_samples = transformPointsInverse(t_form.registration_struct.polynomial.Right_Eye_Raw.tform, [(data_struct_extract.data(:,data_struct_extract.cn.Right_Eye_Raw_X)) (data_struct_extract.data(:,data_struct_extract.cn.Right_Eye_Raw_Y))]);
 
-registered_right_eye_gaze_samples_x = registered_right_eye_gaze_samples(:,1);
-registered_right_eye_gaze_samples_y = registered_right_eye_gaze_samples(:,2);
 
 switching_trials_RB_idx = ismember(trialnum_tracker, ModifiedTrialSets.BySwitchingBlock.RB);
 switching_trials_RB = trialnum_tracker(switching_trials_RB_idx);
@@ -158,19 +156,9 @@ switching_trials_BR = trialnum_tracker(switching_trials_BR_idx);
 right_x_coordinates_BR = registered_right_eye_gaze_samples(switching_trials_BR_idx, 1);
 right_y_coordinates_BR = registered_right_eye_gaze_samples(switching_trials_BR_idx, 2);
 
-gaze_x = data_struct_extract.data(:, data_struct_extract.cn.Gaze_X);
-gaze_y = data_struct_extract.data(:, data_struct_extract.cn.Gaze_Y);
-
-plot (gaze_x(switching_trials_RB_idx), gaze_y(switching_trials_RB_idx),'+');
-set(gca(),'YDir','reverse')
-hold on 
-plot (gaze_x(switching_trials_BR_idx), gaze_y(switching_trials_BR_idx),'y+');
-set(gca(),'YDir','reverse')
-hold off
-
 %convert to DVA
-%[left_x_position_list_deg, left_y_position_list_deg] = fn_convert_pixels_2_DVA(registered_left_eye_gaze_samples(:,1),registered_left_eye_gaze_samples(:,2),...
-	%960, 341.2698, 1920/1209.4, 1080/680.4, 300);
+[right_x_position_list_deg, right_y_position_list_deg] = fn_convert_pixels_2_DVA(registered_right_eye_gaze_samples(:,1),registered_right_eye_gaze_samples(:,2),...
+	960, 341.2698, 1920/1209.4, 1080/680.4, 300);
 
 [right_x_position_list_deg_RB, right_y_position_list_deg_RB] = fn_convert_pixels_2_DVA(right_x_coordinates_RB,right_y_coordinates_RB,...
 	960, 341.2698, 1920/1209.4, 1080/680.4, 300);
@@ -180,22 +168,24 @@ hold off
 
 % detection saccades(Igor's toolbox)
 
-% neg_timestamp_idx = find(data_struct_extract.data(:,data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp) < 0);
-% first_good_sample_idx = neg_timestamp_idx(end) + 1;
-% fgs_idx = first_good_sample_idx;
+neg_timestamp_idx = find(data_struct_extract.data(:,data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp) < 0);
+first_good_sample_idx = neg_timestamp_idx(end) + 1;
+fgs_idx = first_good_sample_idx;
+
+timestamps_s = data_struct_extract.data(fgs_idx:end, data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp)/ 1000;
+switching_block_timestamps_RB = timestamps_s(switching_trials_RB_idx);
+switching_block_timestamps_BR = timestamps_s(switching_trials_BR_idx);
 
 
-timestamps= data_struct_extract.data(:,29);
-switching_block_timestamps_RB = timestamps (switching_trials_RB_idx);
-switching_block_timestamps_RB_s = switching_block_timestamps_RB/1000;
+%Detection of saccade for all the trials 
 
-switching_block_timestamps_BR = timestamps(switching_trials_BR_idx);
-switching_block_timestamps_BR_s = switching_block_timestamps_BR/1000;
+right_eye_out = em_saccade_blink_detection(data_struct_extract.data(fgs_idx:end, data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp)/ 1000, right_x_position_list_deg(fgs_idx:end), right_y_position_list_deg(fgs_idx:end), 'OpenFigure', true,'Plot',true');
 
+%Detection of saccade for the switching block trials from Red to Yellow 
+%right_eye_out_RB = em_saccade_blink_detection(switching_block_timestamps_RB,right_x_position_list_deg_RB, right_y_position_list_deg_RB, 'OpenFigure', true,'Plot',true');
 
-%left_eye_out = em_saccade_blink_detection(data_struct_extract.data(fgs_idx:end, data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp)/ 1000, left_x_position_list_deg(fgs_idx:end), left_y_position_list_deg(fgs_idx:end), 'em_custom_settings_SNP_eyelink.m');
-right_eye_out_RB = em_saccade_blink_detection(switching_block_timestamps_RB_s, right_x_position_list_deg_RB, right_y_position_list_deg_RB, 'OpenFigure', true,'Plot',true);
-right_eye_out_BR = em_saccade_blink_detection(switching_block_timestamps_BR_s, right_x_position_list_deg_BR, right_y_position_list_deg_BR, 'OpenFigure', true,'Plot',true);
+%Detection of saccade for the switching block trials from Yellow to Red
+%right_eye_out_BR = em_saccade_blink_detection(switching_block_timestamps_BR,right_x_position_list_deg_BR, right_y_position_list_deg_BR, 'OpenFigure', true,'Plot',true');
 
 %vergence = fn_vergence_analysis(fileID, gazereg_name);
 
@@ -309,73 +299,88 @@ right_eye_out_BR = em_saccade_blink_detection(switching_block_timestamps_BR_s, r
 
 % exclude saccades
 
-fixation_onsets_RB = (right_eye_out_RB.sac_offsets(:,:) .* 1000)'; %conversion in ms as the TrialWiseData.timepoint
-fixation_onsets_BR = (right_eye_out_BR.sac_offsets(:,:) .* 1000)';
+fixation_onsets = (right_eye_out.sac_offsets(:,:) .* 1000)'; %conversion in ms as the TrialWiseData.timepoint
+fixation_onsets_trialID_list= zeros(size(fixation_onsets));
 
-% fixation_onsets_trialID_list= zeros(size(fixation_onsets));
+for i_trialnumber= 1:size(TrialWiseDataGaze.TrialNumber);
+	
+	current_trial_start_ts = TrialWiseDataGaze.timepoints(i_trialnumber, 1);
+	
+	if isnan(current_trial_start_ts)
+		continue
+	end
+	
+	tmp_nonnan_idx = find(~isnan(TrialWiseDataGaze.timepoints(i_trialnumber, :)));
+	current_trial_end_ts = TrialWiseDataGaze.timepoints(i_trialnumber, tmp_nonnan_idx(end));
+	
+	if isnan(current_trial_end_ts)
+		continue
+	end
+	
+	fixation_onset_4_current_trial_idx = find((fixation_onsets >= current_trial_start_ts) & (fixation_onsets <= current_trial_end_ts));
+	fixation_onsets_trialID_list(fixation_onset_4_current_trial_idx) = TrialWiseDataGaze.TrialNumber(i_trialnumber);
+	
+end
 
-% for i_trialnumber= 1:size(TrialWiseDataGaze.TrialNumber);
-% 	
-% 	current_trial_start_ts = TrialWiseDataGaze.timepoints(i_trialnumber, 1);
-% 	
-% 	if isnan(current_trial_start_ts)
-% 		continue
-% 	end
-% 	
-% 	tmp_nonnan_idx = find(~isnan(TrialWiseDataGaze.timepoints(i_trialnumber, :)));
-% 	current_trial_end_ts = TrialWiseDataGaze.timepoints(i_trialnumber, tmp_nonnan_idx(end));
-% 	
-% 	if isnan(current_trial_end_ts)
-% 		continue
-% 	end
-% 	
-% 	fixation_onset_4_current_trial_idx = find((fixation_onsets >= current_trial_start_ts) & (fixation_onsets <= current_trial_end_ts));
-% 	fixation_onsets_trialID_list(fixation_onset_4_current_trial_idx) = TrialWiseDataGaze.TrialNumber(i_trialnumber);
-% 	
-% end
+fixation_onsets_trialID_list_idx = find(fixation_onsets_trialID_list>0);
+fixation_onsets_trial_of_interest= fixation_onsets_trialID_list(fixation_onsets_trialID_list_idx);
+
+fixation_onsets_4_trial = fixation_onsets(fixation_onsets_trialID_list_idx);
+
 
 %Human behavior : switch from Red to Blue
 
-switch_trial_RB = ModifiedTrialSets.BySwitchingBlock.RB ;
-trial_before_switch_RB = (switch_trial_RB-1) ;
-trial_next_switch_RB = (switch_trial_RB+1) ;
+switch_trial_RB_idx=ismember(fixation_onsets_trial_of_interest,ModifiedTrialSets.BySwitchingBlock.RB);
+switch_trial_RB= fixation_onsets_trial_of_interest(switch_trial_RB_idx);
 
-fixation_x_coordinates_switch_trial_RB= epochdataGazeA.TargetOnset.xCoordinates(switch_trial_RB);
-fixation_y_coordinates_switch_trial_RB = epochdataGazeA.TargetOnset.yCoordinates(switch_trial_RB);
+fixation_onsets_4_switch_trial_RB= fixation_onsets_4_trial(switch_trial_RB_idx);
 
-fixation_x_coordinates_trial_before_switch_RB = epochdataGazeA.TargetOnset.xCoordinates(trial_before_switch_RB);
-fixation_y_coordinates_trial_before_switch_RB = epochdataGazeA.TargetOnset.yCoordinates(trial_before_switch_RB);
 
-fixation_x_coordinates_trial_next_switch_RB = epochdataGazeA.TargetOnset.xCoordinates(trial_next_switch_RB);
-fixation_y_coordinates_trial_next_switch_RB = epochdataGazeA.TargetOnset.yCoordinates(trial_next_switch_RB);
+gaze_x= data_struct_extract.data(:,2);
+gaze_y= data_struct_extract.data(:,3);
+
+fixation_x_coordinates_switch_trial_RB = gaze_x(switch_trial_RB_idx);
+fixation_y_coordinates_switch_trial_RB = gaze_y(switch_trial_RB_idx);
+
+before_switch_trial_RB_idx=ismember(fixation_onsets_trial_of_interest,(ModifiedTrialSets.BySwitchingBlock.RB -1));
+before_switch_trial_RB = fixation_onsets_trial_of_interest(before_switch_trial_RB_idx)
+fixation_onsets_before_switch_trial_RB= fixation_onsets_4_trial(before_switch_trial_RB_idx);
+fixation_x_coordinates_before_switch_trial_RB = gaze_x(before_switch_trial_RB_idx);
+fixation_y_coordinates_before_switch_trial_RB = gaze_y(before_switch_trial_RB_idx);
+
+next_switch_trial_RB_idx=ismember(fixation_onsets_trial_of_interest,(ModifiedTrialSets.BySwitchingBlock.RB +1));
+next_switch_trial_RB = fixation_onsets_trial_of_interest(next_switch_trial_RB_idx);
+fixation_onsets_next_switch_trial_RB= fixation_onsets_4_trial(next_switch_trial_RB_idx);
+fixation_x_coordinates_next_switch_trial_RB = gaze_x(next_switch_trial_RB_idx);
+fixation_y_coordinates_next_switch_trial_RB = gaze_y(next_switch_trial_RB_idx);
 
 %Human behavior : switch from Blue to Red
 
-switch_trial_BR = ModifiedTrialSets.BySwitchingBlock.BR ;
-trial_before_switch_BR = (switch_trial_BR-1) ;
-trial_next_switch_BR = (switch_trial_BR+1) ;
+switch_trial_BR_idx=ismember(fixation_onsets_trial_of_interest,ModifiedTrialSets.BySwitchingBlock.BR);
+switch_trial_BR= fixation_onsets_trial_of_interest(switch_trial_BR_idx);
 
-%fixation_onsets_switch_trial_BR = fixation_onsets(switch_trial_BR);
-fixation_x_coordinates_switch_trial_BR= epochdataGazeA.TargetOnset.xCoordinates(switch_trial_BR);
-fixation_y_coordinates_switch_trial_BR = epochdataGazeA.TargetOnset.yCoordinates(switch_trial_BR);
+fixation_onsets_4_switch_trial_BR= fixation_onsets_4_trial(switch_trial_BR_idx);
+fixation_x_coordinates_switch_trial_BR = gaze_x(switch_trial_BR_idx);
+fixation_y_coordinates_switch_trial_BR = gaze_y(switch_trial_BR_idx);
 
-%fixation_onsets_trial_before_switch_BR = fixation_onsets(trial_before_switch_BR);
-fixation_x_coordinates_trial_before_switch_BR = epochdataGazeA.TargetOnset.xCoordinates(trial_before_switch_BR);
-fixation_y_coordinates_trial_before_switch_BR = epochdataGazeA.TargetOnset.yCoordinates(trial_before_switch_BR);
+before_switch_trial_BR_idx=ismember(fixation_onsets_trial_of_interest,(ModifiedTrialSets.BySwitchingBlock.BR -1));
+before_switch_trial_BR = fixation_onsets_trial_of_interest(before_switch_trial_BR_idx);
+fixation_onsets_before_switch_trial_BR= fixation_onsets_4_trial(before_switch_trial_BR_idx);
+fixation_x_coordinates_before_switch_trial_BR = gaze_x(before_switch_trial_BR_idx);
+fixation_y_coordinates_before_switch_trial_BR = gaze_y(before_switch_trial_BR_idx);
 
-%fixation_onsets_trial_next_switch_BR = fixation_onsets(trial_next_switch_BR);
-fixation_x_coordinates_trial_next_switch_BR = epochdataGazeA.TargetOnset.xCoordinates(trial_next_switch_BR);
-fixation_y_coordinates_trial_next_switch_BR = epochdataGazeA.TargetOnset.yCoordinates(trial_next_switch_BR);
+next_switch_trial_BR_idx=ismember(fixation_onsets_trial_of_interest,(ModifiedTrialSets.BySwitchingBlock.BR +1));
+next_switch_trial_BR = fixation_onsets_trial_of_interest(next_switch_trial_BR_idx);
+fixation_onsets_next_switch_trial_BR= fixation_onsets_4_trial(next_switch_trial_BR_idx);
+fixation_x_coordinates_next_switch_trial_BR = gaze_x(next_switch_trial_BR_idx);
+fixation_y_coordinates_next_switch_trial_BR = gaze_y(next_switch_trial_BR_idx);
 
 
 
-% if (close_figures_on_return)
-% 	close all;
-% end
 
-timestamps.(mfilename).end = toc(timestamps.(mfilename).start);
-disp([mfilename, ' took: ', num2str(timestamps.(mfilename).end), ' seconds.']);
-disp([mfilename, ' took: ', num2str(timestamps.(mfilename).end / 60), ' minutes. Done...']);
+if (close_figures_on_return)
+	close all;
+end
 
 return
 end

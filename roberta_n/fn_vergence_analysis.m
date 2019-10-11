@@ -1,4 +1,4 @@
-function [] = fn_vergence_analysis(fileID, gazereg_name)
+function [vergence_4_subsets_trials] = fn_vergence_analysis(fileID, gazereg_name)
 
 timestamps.(mfilename).start = tic;
 disp(['Starting: ', mfilename]);
@@ -48,7 +48,7 @@ if ~isfield(maintask_datastruct, 'report_struct')
 end
 report_struct = maintask_datastruct.report_struct;
 
-TrialSets = fnCollectTrialSets(maintask_datastruct.report_struct);
+
 
 EyeLinkfilenameA= fullfile(data_dir, 'trackerlogfiles', [fileID, '.TID_EyeLinkProxyTrackerA.trackerlog']);
 
@@ -66,6 +66,7 @@ ncols_maintask = 0;
 invalid_datapoints = find(data_struct_extract.data (:,2)==-32768); %% Removing invalid data pts as defined by eyelink/eventide
 data_struct_extract.data(invalid_datapoints,2:3) = NaN;
 
+
 %trialnum_tracker = fn_trialnumber(maintask_datastruct, data_struct_extract);
 %trialnumber_by_tracker_sample_list = data_struct_extract.data(:, data_struct_extract.cn.TrialNumber);
 trialnumber_by_tracker_sample_list = fn_assign_trialnum2samples_by_range(report_struct, data_struct_extract, report_struct.cn.A_InitialFixationReleaseTime_ms, -500, report_struct.cn.A_TargetOffsetTime_ms, 500);
@@ -80,26 +81,72 @@ registered_right_eye_gaze_samples = transformPointsInverse(t_form.registration_s
 %convert to DVA
 % [left_x_position_list_deg, left_y_position_list_deg] = fn_convert_pixels_2_DVA(registered_left_eye_gaze_samples(:,1),registered_left_eye_gaze_samples(:,2),...
 % 	960, 341.2698, 1920/1209.4, 1080/680.4, 300);
-%
+% 
 % [right_x_position_list_deg, right_y_position_list_deg] = fn_convert_pixels_2_DVA(registered_right_eye_gaze_samples(:,1),registered_right_eye_gaze_samples(:,2),...
 % 	960, 341.2698, 1920/1209.4, 1080/680.4, 300);
 
-
 TrialSets = fnCollectTrialSets(maintask_datastruct.report_struct);
 
+Joint_choicetargets = intersect(TrialSets.ByJointness.DualSubjectJointTrials,TrialSets.ByChoices.NumChoices02);
+bothrewarded = intersect(TrialSets.ByOutcome.SideA.REWARD, TrialSets.ByOutcome.SideB.REWARD);
+SuccessfulChoiceTrials = intersect(Joint_choicetargets, bothrewarded);
+SuccessfulChoiceTrials_BlockedTrials = intersect(SuccessfulChoiceTrials,TrialSets.ByVisibility.AB_invisible);
+SuccessfulChoiceTrials_UnBlockedTrials = setdiff(SuccessfulChoiceTrials, SuccessfulChoiceTrials_BlockedTrials);
+
+successful_trials_idx = ismember(trialnumber_by_tracker_sample_list,SuccessfulChoiceTrials);
+successful_blockedtrials_idx = ismember(trialnumber_by_tracker_sample_list,SuccessfulChoiceTrials_BlockedTrials); 
+successful_unblockedtrials_idx = ismember(trialnumber_by_tracker_sample_list,SuccessfulChoiceTrials_UnBlockedTrials); 
+
+%create a string with our color representations of the 4 choice combinations
+NumTrials = size(maintask_datastruct.report_struct.data(:,2));
+PreferableTargetSelected_B= zeros([NumTrials, 1]);
+PreferableTargetSelected_B(TrialSets.ByChoice.SideB.ProtoTargetValueHigh) = 1;
+
+TrialSets.ByColourSelected.A.Red = TrialSets.ByChoice.SideA.TargetValueHigh;
+TrialSets.ByColourSelected.A.Yellow = TrialSets.ByChoice.SideA.TargetValueLow;
+TrialSets.ByColourSelected.B.Red = TrialSets.ByChoice.SideB.TargetValueHigh;
+TrialSets.ByColourSelected.B.Yellow = TrialSets.ByChoice.SideB.TargetValueLow;
+
+TrialSets.SuccessfulChoiceTrials = SuccessfulChoiceTrials;
+TrialSets.SuccessfulChoiceTrials_BlockedTrials = SuccessfulChoiceTrials_BlockedTrials;
+TrialSets.SuccessfulChoiceTrials_UnBlockedTrials = SuccessfulChoiceTrials_UnBlockedTrials;
+
+choice_combination_color_string = char(PreferableTargetSelected_B);
+choice_combination_color_string(TrialSets.ByColourSelected.B.Red) = 'R';
+choice_combination_color_string(TrialSets.ByColourSelected.B.Yellow) = 'B';
+% choice_combination_color_string(A_Own_B_Own) = 'M';
+% choice_combination_color_string(A_OtherB_Other) = 'G';
+choice_combination_color_string = (choice_combination_color_string)';
+
+pattern_in_class_string_struct_blocked = fn_extract_switches_from_classifier_string(choice_combination_color_string(SuccessfulChoiceTrials_BlockedTrials));
+
+switching_number_blockedtrial_RB = TrialSets.SuccessfulChoiceTrials_BlockedTrials(pattern_in_class_string_struct_blocked.RB);
+switching_number_blockedtrial_BR = TrialSets.SuccessfulChoiceTrials_BlockedTrials(pattern_in_class_string_struct_blocked.BR);
+TrialSets.BySwitchingBlock.BlockedTrials.RB = switching_number_blockedtrial_RB;
+TrialSets.BySwitchingBlock.BlockedTrials.BR = switching_number_blockedtrial_BR;
+
+
+pattern_in_class_string_struct_unblocked = fn_extract_switches_from_classifier_string(choice_combination_color_string(SuccessfulChoiceTrials_UnBlockedTrials));
+
+switching_number_unblockedtrial_RB = TrialSets.SuccessfulChoiceTrials_UnBlockedTrials(pattern_in_class_string_struct_unblocked.RB);
+switching_number_unblockedtrial_BR = TrialSets.SuccessfulChoiceTrials_UnBlockedTrials(pattern_in_class_string_struct_unblocked.BR);
+TrialSets.BySwitchingBlock.UnBlockedTrials.RB = switching_number_unblockedtrial_RB;
+TrialSets.BySwitchingBlock.UnBlockedTrials.BR = switching_number_unblockedtrial_BR;
+
+
+switching_blockedtrials_RB_idx = ismember(trialnumber_by_tracker_sample_list,TrialSets.BySwitchingBlock.BlockedTrials.RB); 
+switching_blockedtrials_BR_idx = ismember(trialnumber_by_tracker_sample_list,TrialSets.BySwitchingBlock.BlockedTrials.BR); 
 
 solo_trials_idx = ismember(trialnumber_by_tracker_sample_list, TrialSets.ByJointness.DualSubjectSoloTrials);
-
 if isempty(find(solo_trials_idx))
 	solo_trials_idx = ismember(trialnumber_by_tracker_sample_list, TrialSets.ByActivity.SingleSubjectTrials);
 end
 
 solo_trials = trialnumber_by_tracker_sample_list(solo_trials_idx);
 
-
-
 invisible_trials_idx = ismember(trialnumber_by_tracker_sample_list, TrialSets.ByVisibility.AB_invisible);
 invisible_trials =  trialnumber_by_tracker_sample_list(invisible_trials_idx);
+
 joint_trials_idx = ismember(trialnumber_by_tracker_sample_list, TrialSets.ByJointness.DualSubjectJointTrials);
 joint_trials = trialnumber_by_tracker_sample_list(joint_trials_idx);
 
@@ -107,8 +154,15 @@ joint_visible_trials = setdiff(joint_trials,invisible_trials);
 joint_visible_trials_idx = ismember (trialnumber_by_tracker_sample_list, joint_visible_trials);
 
 
+switching_blockedtrials_RB_idx = ismember(trialnumber_by_tracker_sample_list,TrialSets.BySwitchingBlock.BlockedTrials.RB); 
+switching_blockedtrials_RB = trialnumber_by_tracker_sample_list(switching_blockedtrials_RB_idx);
 
-%x and y coordinates for a subset of trials
+switching_blockedtrials_BR_idx = ismember(trialnumber_by_tracker_sample_list,TrialSets.BySwitchingBlock.BlockedTrials.BR); 
+switching_blockedtrials_BR = trialnumber_by_tracker_sample_list(switching_blockedtrials_BR_idx);
+
+switching_unblockedtrials_RB_idx = ismember(trialnumber_by_tracker_sample_list,TrialSets.BySwitchingBlock.UnBlockedTrials.RB); 
+switching_blockedtrials_RB = trialnumber_by_tracker_sample_list(switching_unblockedtrials_RB_idx);
+
 
 bin_width = 2;
 Xedges = (600:bin_width:(1920-600));
@@ -124,7 +178,14 @@ Yedges = (100:bin_width:750);
 [joint_invisible__vergence] = fn_plot_vergence_by_index(registered_right_eye_gaze_samples, registered_left_eye_gaze_samples, invisible_trials_idx, ...
 	Xedges, Yedges, 'Joint invisible trials', 'joint_invisible', output_dir, fileID);
 
+[successful_vergence] = fn_plot_vergence_by_index(registered_right_eye_gaze_samples, registered_left_eye_gaze_samples, successful_trials_idx, ...
+	Xedges, Yedges, 'Successful choice trials', 'successful_choice', output_dir, fileID);
 
+[switching_blocked_RB_vergence] = fn_plot_vergence_by_index(registered_right_eye_gaze_samples, registered_left_eye_gaze_samples, switching_blockedtrials_RB_idx, ...
+	Xedges, Yedges, 'Switching blocked trials from red to blue', 'switching_blocked_RB', output_dir, fileID);
+
+[switching_unblocked_RB_vergence] = fn_plot_vergence_by_index(registered_right_eye_gaze_samples, registered_left_eye_gaze_samples, switching_unblockedtrials_RB_idx, ...
+	Xedges, Yedges, 'Switching unblocked trials from red to blue', 'switching_unblocked_RB', output_dir, fileID);
 
 % right_x_coordinates_solo_trials = registered_right_eye_gaze_samples_x(solo_trials_idx);
 % right_y_coordinates_solo_trials = registered_right_eye_gaze_samples_y(solo_trials_idx);

@@ -2,6 +2,25 @@ function [maintask_datastruct, data_struct_extract, touchtracker_datastructA, to
 %UNTITLED7 Summary of this function goes here
 %   Detailed explanation goes here
 
+
+% sessionID_list = {'20190320T095244.A_Elmo.B_JK.SCP_01',...
+%           '20190321T083454.A_Elmo.B_JK.SCP_01'}
+% %'20190322T083726.A_Elmo.B_JK.SCP_01',...
+% % 	'20190329T112049.A_Elmo.B_SM.SCP_01',...
+% % 	'20190403T090741.A_Elmo.B_JK.SCP_01',...
+% % 	'20190404T090735.A_Elmo.B_JK.SCP_01'};
+% 
+% gazereg_list = {'GAZEREG.SID_20190320T092435.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat',...
+%  	   'GAZEREG.SID_20190321T072108.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat'}
+% %      'GAZEREG.SID_20190322T071957.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat',...
+% %      'GAZEREG.SID_20190329T111602.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat',...
+% %      'GAZEREG.SID_20190403T073047.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat',...
+% %      'GAZEREG.SID_20190404T083605.A_Elmo.B_None.SCP_01.SIDE_A.SUBJECTElmo.eyelink.TRACKERELEMENTID_EyeLinkProxyTrackerA.mat'};
+% 
+% [maintask_datastruct, data_struct_extract, touchtracker_datastructA, touchtracker_datastructB, recalibration_struct] = fn_merging_session(sessionID_list,gazereg_list);
+
+
+
 data_root_str = fullfile('C:', 'SCP');
 
 % network!
@@ -125,24 +144,21 @@ for i_session = 1 : length(sessionID_list)
 		tmp_main_dataStruct.data(:,timestamps_col_B_TmpTouchRelease_maintask) = tmp_main_dataStruct.data(:,timestamps_col_B_TmpTouchRelease_maintask) + per_session_offset;
 		
 		
-		trialnum_col_gaze = tmp_data_struct_extract.cn.TrialNumber;
-		tmp_dataStruct.data(:, trialnum_col_gaze) = tmp_dataStruct.data(:, trialnum_col_gaze) + per_session_offset;
+		% GAZE data
+		tmp_dataStruct.data(:, tmp_data_struct_extract.cn.TrialNumber) = tmp_dataStruct.data(:, tmp_data_struct_extract.cn.TrialNumber) + per_session_offset;
+		tmp_dataStruct.data(:,tmp_data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp) = tmp_dataStruct.data(:,tmp_data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp) + per_session_offset;
+		tmp_dataStruct.data(:,tmp_data_struct_extract.cn.EventIDE_TimeStamp) = tmp_dataStruct.data(:,tmp_data_struct_extract.cn.EventIDE_TimeStamp) + per_session_offset;		
 		
-		timestamps_col_gaze = tmp_data_struct_extract.cn.Tracker_corrected_EventIDE_TimeStamp;
-		tmp_dataStruct.data(:,timestamps_col_gaze) = tmp_dataStruct.data(:,timestamps_col_gaze) + per_session_offset;
+		% TOUCH DATA A
+		tmp_touch_A.data(:, tmp_touch_A.cn.TrialNum) = tmp_touch_A.data(:, tmp_touch_A.cn.TrialNum) + per_session_offset;
+		tmp_touch_A.data(:,tmp_touch_A.cn.Tracker_corrected_EventIDE_TimeStamp) = tmp_touch_A.data(:,tmp_touch_A.cn.Tracker_corrected_EventIDE_TimeStamp) + per_session_offset;
+		tmp_touch_A.data(:,tmp_touch_A.cn.EventIDE_TimeStamp) = tmp_touch_A.data(:,tmp_touch_A.cn.EventIDE_TimeStamp) + per_session_offset;		
 		
+		% TOUCH DATA B		
+		tmp_touch_B.data(:, tmp_touch_B.cn.TrialNum) = tmp_touch_B.data(:, tmp_touch_B.cn.TrialNum) + per_session_offset;		
+		tmp_touch_B.data(:,tmp_touch_B.cn.Tracker_corrected_EventIDE_TimeStamp) = tmp_touch_B.data(:,tmp_touch_B.cn.Tracker_corrected_EventIDE_TimeStamp) + per_session_offset;
+		tmp_touch_B.data(:,tmp_touch_B.cn.EventIDE_TimeStamp) = tmp_touch_B.data(:,tmp_touch_B.cn.EventIDE_TimeStamp) + per_session_offset;
 		
-		trialnum_col_touch_A = tmp_touch_A.cn.TrialNum;
-		tmp_touch_A.data(:, trialnum_col_touch_A) = tmp_touch_A.data(:, trialnum_col_touch_A) + per_session_offset;
-		
-		timestamps_col_touch_A = tmp_touch_A.cn.Tracker_corrected_EventIDE_TimeStamp;
-		tmp_touch_A.data(:,timestamps_col_touch_A) = tmp_touch_A.data(:,timestamps_col_touch_A) + per_session_offset;
-		
-		trialnum_col_touch_B = tmp_touch_B.cn.TrialNum;
-		tmp_touch_B.data(:, trialnum_col_touch_B) = tmp_touch_B.data(:, trialnum_col_touch_B) + per_session_offset;
-		
-		timestamps_col_touch_B = tmp_touch_A.cn.Tracker_corrected_EventIDE_TimeStamp;
-		tmp_touch_B.data(:,timestamps_col_touch_B) = tmp_touch_B.data(:,timestamps_col_touch_B) + per_session_offset;
 		
 		
 		% fix the reward sub structure
@@ -283,6 +299,7 @@ for i_session = 1 : length(sessionID_list)
 	% % 	registered_right_eye_gaze_samples_y_coordinates) ;
 	% %
 	%end
+
 end
 end
 
@@ -340,7 +357,7 @@ for i_idx_col = 1 : length(idx_col_list)
 		current_col_name = new_data_struct.header{i_idx_col};
 		
 		if isempty(regexp(current_col_name, 'ENUM_idx$'));
-			disp(['Non ENUM _idx column: ', current_col_name]);
+			%disp(['Non ENUM _idx column: ', current_col_name]);
 			unique_list_name = current_col_name(1:end-4);
 			
 			tmp_main_cur_col_idx_list = (existing_data_struct.data(:, existing_data_struct.cn.(current_col_name)));

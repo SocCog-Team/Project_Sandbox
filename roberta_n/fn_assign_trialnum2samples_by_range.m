@@ -18,6 +18,7 @@ for trial_datapoints = 1:(n_trials - 1)
 		end	
 		if ~isempty(samples_in_current_trial_idx)
 			trialnum_tracker(samples_in_current_trial_idx) = trial_datapoints;
+			%trialnum_tracker(samples_in_current_trial_idx) = report_struct.data(trial_datapoints, report_struct.cn.TrialNumber);
 		end
 	end
 end

@@ -397,13 +397,18 @@ for i_fix_target = 1 : length(find(unique_fixation_targets))
 	x_y_mouse_y_flipped(i_fix_target, 1) = tmp_x_list(end);
 	x_y_mouse_y_flipped(i_fix_target, 2) = tmp_y_list(end);
 	
-	plot(fixation_target_position_table(unique_fixation_target_id, 1), fn_convert_eventide2_matlab_coord(fixation_target_position_table(unique_fixation_target_id, 2)), 'LineWidth', 2, 'LineStyle', 'none', 'Color', [0.8 0 0], 'Marker', '+', 'Markersize', 10);
-	plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 2, 'LineStyle', 'none', 'Color', cluster_center_color, 'Marker', 'x', 'Markersize', 10);
-	% show the
-	tmp_radius = acceptable_radius_pix;
-	tmp_diameter = 2 * tmp_radius;
-	rectangle('Position',[x_y_mouse_y_flipped(i_fix_target, 1)-tmp_radius x_y_mouse_y_flipped(i_fix_target, 2)-tmp_radius tmp_diameter tmp_diameter],'Curvature',[1,1], 'EdgeColor', cluster_center_color, 'LineWidth', 1);
-	%daspect([1,1,1])
+	if ~isnan(tmp_x_list(end)) && ~isnan(tmp_y_list(end))
+		
+		plot(fixation_target_position_table(unique_fixation_target_id, 1), fn_convert_eventide2_matlab_coord(fixation_target_position_table(unique_fixation_target_id, 2)), 'LineWidth', 2, 'LineStyle', 'none', 'Color', [0.8 0 0], 'Marker', '+', 'Markersize', 10);
+		plot(x_y_mouse_y_flipped(i_fix_target, 1), x_y_mouse_y_flipped(i_fix_target, 2), 'LineWidth', 2, 'LineStyle', 'none', 'Color', cluster_center_color, 'Marker', 'x', 'Markersize', 10);
+		% show the
+		tmp_radius = acceptable_radius_pix;
+		tmp_diameter = 2 * tmp_radius;
+		rectangle('Position',[x_y_mouse_y_flipped(i_fix_target, 1)-tmp_radius x_y_mouse_y_flipped(i_fix_target, 2)-tmp_radius tmp_diameter tmp_diameter],'Curvature',[1,1], 'EdgeColor', cluster_center_color, 'LineWidth', 1);
+		%daspect([1,1,1])
+	else
+		disp(['No (valid) coordinates selected for the last target position (', num2str(unique_fixation_target_id), ')']);
+	end
 end
 hold off
 xlim([(960-300) (960+300)]);
@@ -502,28 +507,28 @@ gaze_selected_samples = all_gaze_selected_samples(selected_samples_idx, :);
 all_target_selected_samples = [data_struct.data(:, ds_colnames.FixationPointX) data_struct.data(:, ds_colnames.FixationPointY)];
 target_selected_samples = all_target_selected_samples(selected_samples_idx, :);
 
-% for pwl/lwm try to only select the selectd samples closest to the
-% respective cluster center/ the cluster median position
-cur_selected_samples_pwl_lwm_idx = [];
-for i_fix_target = 1 : length(find(unique_fixation_targets))
-	unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
-	current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
-	valid_samples_for_current_fixtargID = intersect(selected_samples_idx, current_fixation_target_samples_idx);
-	if ~isempty(valid_samples_for_current_fixtargID)
-		% find the sample closest to the current cluster center
-		[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
-		cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];
-	end
-end
 
-n_control_points = length(cur_selected_samples_pwl_lwm_idx);
 
 
 for i_transformationType = 1 : length(transformationType_list)
 	transformationType = transformationType_list{i_transformationType};
 	
-	transformationType_string = transformationType;
+	% for pwl/lwm try to only select the selectd samples closest to the
+	% respective cluster center/ the cluster median position
+	cur_selected_samples_pwl_lwm_idx = [];
+	for i_fix_target = 1 : length(find(unique_fixation_targets))
+		unique_fixation_target_id = unique_fixation_targets(nonzero_unique_fixation_target_idx(i_fix_target));
+		current_fixation_target_samples_idx = find(fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) == unique_fixation_target_id);
+		valid_samples_for_current_fixtargID = intersect(selected_samples_idx, current_fixation_target_samples_idx);
+		if ~isempty(valid_samples_for_current_fixtargID)
+			% find the sample closest to the current cluster center
+			[min_dist, closest_point_idx_idx] = min(euclidean_distance_array(valid_samples_for_current_fixtargID, unique_fixation_target_id));
+			cur_selected_samples_pwl_lwm_idx = [cur_selected_samples_pwl_lwm_idx, valid_samples_for_current_fixtargID(closest_point_idx_idx)];
+		end
+	end
+	n_control_points = length(cur_selected_samples_pwl_lwm_idx);	
 	
+	transformationType_string = transformationType;
 	output_degree_string = '';
 	% calculate the registration
 	switch (transformationType)
@@ -548,7 +553,7 @@ for i_transformationType = 1 : length(transformationType_list)
 			end
 			transformationType_string = [transformationType_string, ' (n: ', num2str(lwm_N),')'];
 			output_degree_string = ['.', num2str(lwm_N)];
-			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+			tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, lwm_N); % polynomial_degree is N
 		otherwise
 			tform = fn_fitgeotrans(target_selected_samples, gaze_selected_samples, transformationType);
 	end
@@ -631,7 +636,7 @@ for i_transformationType = 1 : length(transformationType_list)
 				end
 				output_degree_string = ['.', num2str(lwm_N)];
 				transformationType_string = [transformationType_string, ' (n: ', num2str(polynomial_degree),')'];
-				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, polynomial_degree); % polynomial_degree is N
+				current_tform = fn_fitgeotrans(all_target_selected_samples(cur_selected_samples_pwl_lwm_idx, :), all_gaze_selected_samples(cur_selected_samples_pwl_lwm_idx, :), transformationType, lwm_N); % polynomial_degree is N
 			otherwise
 				current_tform = fn_fitgeotrans(current_target_selected_samples, current_gaze_samples, transformationType);
 		end

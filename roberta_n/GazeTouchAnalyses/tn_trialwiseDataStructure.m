@@ -19,8 +19,8 @@ function[TrialWiseData]= tn_trialwiseDataStructure(xytime,trialnum_tracker,nrows
             TrialWiseData.yCoordinates(trialnum,1:length(trialnum_idx))=xytime(trialnum_idx,3);
         end
     end
-    TrialWiseData.timepoints(TrialWiseData.timepoints==0) = NaN;   
-    TrialWiseData.xCoordinates(TrialWiseData.xCoordinates==0) = NaN;   
-    TrialWiseData.yCoordinates(TrialWiseData.yCoordinates==0) = NaN;   
+    TrialWiseData.timepoints(TrialWiseData.timepoints == 0) = NaN;   
+    TrialWiseData.xCoordinates(TrialWiseData.xCoordinates == 0) = NaN;   
+    TrialWiseData.yCoordinates(TrialWiseData.yCoordinates == 0) = NaN;   
     
 end

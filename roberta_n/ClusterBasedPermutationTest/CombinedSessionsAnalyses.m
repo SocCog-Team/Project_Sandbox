@@ -38,15 +38,12 @@ mfilepath = fileparts(fq_mfilename);
 % % saving_dir = pwd;
 %addpath('C:\Users\Tarana\SCP_Code\tn_PermutationTesting');
 saving_dir = 'C:\Users\Tarana\SCP_Code\ModifiedCodefromSebastian\tn_PermutationTesting';
-
-
-
 filename = 'EarlySessionsCombined.mat';
 load(fullfile(saving_dir,filename));
 FullStructure = EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50;
 % load('EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50.mat');
 [BIFRValueSidepSeePlus50scores, FullStructure] = tn_StructureDataforPermTest(FullStructure);
- tn_PlotAvgCombined(abc.FullStructure, saving_dir, filename);
+tn_PlotAvgCombined(abc.FullStructure, saving_dir, filename);
 
 
 

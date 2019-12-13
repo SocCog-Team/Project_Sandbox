@@ -8,7 +8,7 @@ Byrewardttype_pos_blocked_Names=fieldnames(ModifiedTrialSets.Byrewardttype_pos.S
 % ByStimulusPosition_leftrightChoicecategoriesNamesSp=ByChoicePositionColourRewardNames(counter+4);
 % ByStimulusPosition_leftrightChoicecategoriesNamesSpStr=ModifiedTrialSets.ByStimulusPosition_leftrightChoicecategories.(ByStimulusPosition_leftrightChoicecategoriesNamesSp{1});
 a=0;
-
+TrialNumStr = 'No. of Trials= ';
 for counter= 1:24
 	Byrewardttype_posSp=Byrewardttype_pos_blocked_Names(counter);
 	Byrewardttype_posSpStr=ModifiedTrialSets.Byrewardttype_pos.SuccessfulChoiceTrialsBlocked.(Byrewardttype_posSp{1});
@@ -23,6 +23,7 @@ for counter= 1:24
 	%     for i= 1: length(timepointsLists)-1
 	%         abc(:,i)=find(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)> timepointsLists(i) & epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)<= timepointsLists(i+1)
 	%     end
+	
 	
 	if counter==1 || counter==5 || counter==9 || counter==13 || counter==17 || counter== 21
 		figure()
@@ -44,8 +45,35 @@ for counter= 1:24
 		continue;
 	end
 	
+if counter>=1 && counter<=12
+		annotation('textbox',[.9 .8 .1 .2],'String','Red on Objective Right','EdgeColor','none')
+	end
+	if counter>=13 && counter<=24
+		annotation('textbox',[.9 .8 .1 .2],'String','Red on Objective Left','EdgeColor','none')
+	end
+	
 	
 	subplot(2,2,a);
+	
+	str=strcat(TrialNumStr, num2str(size((TrialLists),1)));
+	text(0,1250,str);
+	if a==1
+		strCond='A-Own/B-Own';
+		text(0,1300,strCond);
+	end
+	if a==2
+		strCond='A-Own/B-Other';
+		text(0,1300,strCond);
+	end
+	if a==3
+		strCond='A-Other/B-Own';
+		text(0,1300,strCond);
+	end
+	if a==4
+		strCond='A-Other/B-Other';
+		text(0,1300,strCond);
+	end
+	
 	
 	xL_centraltarget=[-0.5,1];
 	line(xL_centraltarget,[960 960],'Color','k');
@@ -83,22 +111,22 @@ for counter= 1:24
 	vergence = (epochdataRegisteredGazeA_poly_right.xCoordinates)- (epochdataRegisteredGazeA_poly_left.xCoordinates);
 	AverageVergence = mean (vergence(TrialLists,:),1,'omitnan');
 	
-    OverLayPlotsGazeA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists,:),epochdataRegisteredGazeA_poly_right.xCoordinates(TrialLists,:),'.','Color','k','LineWidth',2);
+    OverLayPlotsGazeA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists,:),epochdataRegisteredGazeA_poly_right.xCoordinates(TrialLists,:),'.','Color','k','MarkerSize',6);
     hold on
-	OverLayPlotsTouchB=plot(epochdataTouchB.timepoints(TrialLists,:),epochdataTouchB.xCoordinates(TrialLists,:),'.','Color','b','LineWidth',2);
+	OverLayPlotsTouchB=plot(epochdataTouchB.timepoints(TrialLists,:),epochdataTouchB.xCoordinates(TrialLists,:),'.','Color','b','MarkerSize',6);
 	hold on
-	OverLayPlotsTouchA=plot(epochdataTouchA.timepoints(TrialLists,:),epochdataTouchA.xCoordinates(TrialLists,:),'.','Color','r','LineWidth',2);
+	OverLayPlotsTouchA=plot(epochdataTouchA.timepoints(TrialLists,:),epochdataTouchA.xCoordinates(TrialLists,:),'.','Color','r','MarkerSize',6);
 	% %     OverLayPlotsGazeA.MarkerSize=3;
 	%     OverLayPlotsGazeA.Color='red';
 	hold on
-	OverLayPlotsGazeAVGA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists,:),AverageGazeA,'.','Color',[1,0.5,0],'LineWidth',2)
+	OverLayPlotsGazeAVGA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageGazeA,'.','Color',[1,0.5,0],'MarkerSize',7)
     hold on 
-	OverLayPlotsTouchAVGA=plot(epochdataTouchA.timepoints(TrialLists,:),AverageTouchA,'*','Color','g','LineWidth',2 );
+	OverLayPlotsTouchAVGA=plot(epochdataTouchA.timepoints(TrialLists(1),:),AverageTouchA,'*','Color','g','MarkerSize',8);
 	hold on
-	OverLayPlotsTouchAVGB=plot(epochdataTouchB.timepoints(TrialLists,:),AverageTouchB,'*','Color','y','LineWidth',2);
+	OverLayPlotsTouchAVGB=plot(epochdataTouchB.timepoints(TrialLists(1),:),AverageTouchB,'*','Color','y','MarkerSize',8);
 	hold on 
     yyaxis right
-	OverLayPlotsVergence = plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageVergence,'.','Color','m','LineWidth',2)
+	OverLayPlotsVergence = plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageVergence,'.','Color','m','MarkerSize',8)
 	set(gca,'ylim',[-50 50])
 	
 	
@@ -149,140 +177,140 @@ for counter= 1:24
 end
 
 a=0;
-
-%%For Y Gaze vs Time
-for counter= 1:24
-    Byrewardttype_posSp=Byrewardttype_pos_blocked_Names(counter);
-    Byrewardttype_posSpStr=ModifiedTrialSets.Byrewardttype_pos.SuccessfulChoiceTrialsBlocked.(Byrewardttype_posSp{1});
-    
-    TrialLists=Byrewardttype_posSpStr;
-%     numb=length(TrialLists);
-%     for RemoveLastTrial= 1: numb
-%         
-%     timepointsLists=linspace(-0.5, ,length(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)));
-%     timeBins=histogram(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:));
-%     timeBins.BinEdges=timepointsLists;
-%     for i= 1: length(timepointsLists)-1
-%         abc(:,i)=find(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)> timepointsLists(i) & epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)<= timepointsLists(i+1)
-%     end
-    
-    if counter==1 || counter==5 || counter==9 || counter==13 || counter==17 || counter== 21
-        figure()
-		set( gcf, 'PaperUnits','centimeters' );
-		xSize = 24; ySize = 24;
-		xLeft = 0; yTop = 0;
-		set( gcf,'PaperPosition', [ xLeft yTop xSize ySize ] );
-		
-		left_color = [0 0 0];
-		right_color = [0 0 0];
-		set(figure,'defaultAxesColorOrder',[left_color; right_color])
-		
-	
-        
-    end
-   
-    a=a+1;
-    if a>4
-        a=1;
-    end
-    if length(TrialLists)==0
-       continue; 
-    end
-    subplot(2,2,a);
-	xL_centraltarget=[-0.5,1.8];
-    line(xL_centraltarget,[500 500],'Color','k');
-    ylim([400 600]);
-    xlim([-0.5 1.8])
-    hold on
-    xL_touchtarget=[-0.5,1.8];
-    yL = get(gca,'YLim');    
-    hold on
-    line([0 0],yL,'Color','g');
-    if counter>=1 && counter<=12 
-        if a==1 || a==2
-            line(xL_touchtarget,[556 556],'Color','b', 'LineStyle','--');
-            line(xL_touchtarget,[556 556],'Color','r');
-        else 
-            line(xL_touchtarget,[556 556],'Color','b');
-            line(xL_touchtarget,[556 556],'Color','r','LineStyle', '--');
-        end
-    else
-        if a==1 || a==2
-            line(xL_touchtarget,[556 556],'Color','r');
-            line(xL_touchtarget,[556 556],'Color','b','LineStyle', '--');
-        else 
-            line(xL_touchtarget,[556 556],'Color','r','LineStyle', '--');
-            line(xL_touchtarget,[556 556],'Color','b');
-        end
-    end
-
-% % 
-    AverageGazeA=mean(epochdataRegisteredGazeA_poly_right.yCoordinates(TrialLists,:),1);
-    AverageTouchA=mean(epochdataTouchA.yCoordinates(TrialLists,:),1,'omitnan');
-    AverageTouchB=mean(epochdataTouchB.yCoordinates(TrialLists,:),1,'omitnan');
-	vergence = (epochdataRegisteredGazeA_poly_right.xCoordinates)- (epochdataRegisteredGazeA_poly_left.xCoordinates);
-	AverageVergence = mean (vergence(TrialLists,:),1,'omitnan');
-	
-%     av=mean(epochdataTouchA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:),1);
-
-    OverLayPlotsGazeA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists,:),epochdataRegisteredGazeA_poly_right.yCoordinates(TrialLists,:),'.','Color','k','LineWidth',2);
-    hold on
-	OverLayPlotsTouchB=plot(epochdataTouchB.timepoints(TrialLists,:),epochdataTouchB.xCoordinates(TrialLists,:),'.','Color','b','LineWidth',2);
-	hold on
-	OverLayPlotsTouchA=plot(epochdataTouchA.timepoints(TrialLists,:),epochdataTouchA.xCoordinates(TrialLists,:),'.','Color','r','LineWidth',2);
-	hold on
-	OverLayPlotsGazeAVGA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageGazeA,'.','Color',[1 0.5 0],'LineWidth',2)
-    hold on 
-    OverLayPlotsTouchAVGA=plot(epochdataTouchA.timepoints(TrialLists(1),:),AverageTouchA,'*','Color','g','LineWidth',2)
-    hold on
-    OverLayPlotsTouchAVGB=plot(epochdataTouchB.timepoints(TrialLists(1),:),AverageTouchB,'*','Color','y','LineWidth',2)
-
+% 
+% %%For Y Gaze vs Time
+% for counter= 1:24
+%     Byrewardttype_posSp=Byrewardttype_pos_blocked_Names(counter);
+%     Byrewardttype_posSpStr=ModifiedTrialSets.Byrewardttype_pos.SuccessfulChoiceTrialsBlocked.(Byrewardttype_posSp{1});
 %     
-%     MaxLengthTimePoints_idx=find(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)==max(length(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:))));
-%     min(nnz(~isnan(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:))))
-    hold on
-	yyaxis right
-	OverLayPlotsVergence = plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageVergence,'.','Color','m','LineWidth',2)
-	set(gca,'ylim',[-50 50])
-	
-	hold on
-    if a==1
-		yyaxis left
-        ylabel('A selected Own Colour \newline Y-Coordinates','FontSize',15)
-                
-    end
-    if a==3
-        xlabel('Time(secs) \newline B selected Own Colour','FontSize',15)     
-		yyaxis left 
-        ylabel('A selected Other"s Colour \newline Y-Coordinates','FontSize',15)
-    end
-    if a==4
-        xlabel('Time(secs) \newline B selected Other"s Colour','FontSize',15)
-    end
-    if counter>=1 && counter<=4 
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightTopAlignedtoAIFR.pdf'))
-        
-    end
-    if counter>=5 && counter<=8 
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightCenterAlignedtoAIFR.pdf'))
-        
-    end
-    if counter>=9 && counter<=12  
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightBottomAlignedtoAIFR.pdf'))
-        
-    end
-    if counter>=13 && counter<=16 
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftTopAlignedtoAIFR.pdf'))
-        
-    end
-    if counter>=17 && counter<=20  
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftCenterAlignedtoAIFR.pdf'))
-        
-    end
-    if counter>=21 && counter<=24 
-        write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftBottomAlignedtoAIFR.pdf'))
-    end
-end
+%     TrialLists=Byrewardttype_posSpStr;
+% %     numb=length(TrialLists);
+% %     for RemoveLastTrial= 1: numb
+% %         
+% %     timepointsLists=linspace(-0.5, ,length(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)));
+% %     timeBins=histogram(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:));
+% %     timeBins.BinEdges=timepointsLists;
+% %     for i= 1: length(timepointsLists)-1
+% %         abc(:,i)=find(epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)> timepointsLists(i) & epochdataGazeA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)<= timepointsLists(i+1)
+% %     end
+%     
+%     if counter==1 || counter==5 || counter==9 || counter==13 || counter==17 || counter== 21
+%         figure()
+% 		set( gcf, 'PaperUnits','centimeters' );
+% 		xSize = 24; ySize = 24;
+% 		xLeft = 0; yTop = 0;
+% 		set( gcf,'PaperPosition', [ xLeft yTop xSize ySize ] );
+% 		
+% 		left_color = [0 0 0];
+% 		right_color = [0 0 0];
+% 		set(figure,'defaultAxesColorOrder',[left_color; right_color])
+% 		
+% 	
+%         
+%     end
+%    
+%     a=a+1;
+%     if a>4
+%         a=1;
+%     end
+%     if length(TrialLists)==0
+%        continue; 
+%     end
+%     subplot(2,2,a);
+% 	xL_centraltarget=[-0.5,1.8];
+%     line(xL_centraltarget,[500 500],'Color','k');
+%     ylim([400 600]);
+%     xlim([-0.5 1.8])
+%     hold on
+%     xL_touchtarget=[-0.5,1.8];
+%     yL = get(gca,'YLim');    
+%     hold on
+%     line([0 0],yL,'Color','g');
+%     if counter>=1 && counter<=12 
+%         if a==1 || a==2
+%             line(xL_touchtarget,[556 556],'Color','b', 'LineStyle','--');
+%             line(xL_touchtarget,[556 556],'Color','r');
+%         else 
+%             line(xL_touchtarget,[556 556],'Color','b');
+%             line(xL_touchtarget,[556 556],'Color','r','LineStyle', '--');
+%         end
+%     else
+%         if a==1 || a==2
+%             line(xL_touchtarget,[556 556],'Color','r');
+%             line(xL_touchtarget,[556 556],'Color','b','LineStyle', '--');
+%         else 
+%             line(xL_touchtarget,[556 556],'Color','r','LineStyle', '--');
+%             line(xL_touchtarget,[556 556],'Color','b');
+%         end
+%     end
+% 
+% % % 
+%     AverageGazeA=mean(epochdataRegisteredGazeA_poly_right.yCoordinates(TrialLists,:),1);
+%     AverageTouchA=mean(epochdataTouchA.yCoordinates(TrialLists,:),1,'omitnan');
+%     AverageTouchB=mean(epochdataTouchB.yCoordinates(TrialLists,:),1,'omitnan');
+% 	vergence = (epochdataRegisteredGazeA_poly_right.xCoordinates)- (epochdataRegisteredGazeA_poly_left.xCoordinates);
+% 	AverageVergence = mean (vergence(TrialLists,:),1,'omitnan');
+% 	
+% %     av=mean(epochdataTouchA.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:),1);
+% 
+%     OverLayPlotsGazeA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists,:),epochdataRegisteredGazeA_poly_right.yCoordinates(TrialLists,:),'.','Color','k','MarkerSize',6);
+%     hold on
+% 	OverLayPlotsTouchB=plot(epochdataTouchB.timepoints(TrialLists,:),epochdataTouchB.xCoordinates(TrialLists,:),'.','Color','b','MarkerSize',6);
+% 	hold on
+% 	OverLayPlotsTouchA=plot(epochdataTouchA.timepoints(TrialLists,:),epochdataTouchA.xCoordinates(TrialLists,:),'.','Color','r','MarkerSize',6);
+% 	hold on
+% 	OverLayPlotsGazeAVGA=plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageGazeA,'.','Color',[1 0.5 0],'MarkerSize',8)
+%     hold on 
+%     OverLayPlotsTouchAVGA=plot(epochdataTouchA.timepoints(TrialLists(1),:),AverageTouchA,'*','Color','g','MarkerSize',8)
+%     hold on
+%     OverLayPlotsTouchAVGB=plot(epochdataTouchB.timepoints(TrialLists(1),:),AverageTouchB,'*','Color','y','MarkerSize',8)
+% 
+% %     
+% %     MaxLengthTimePoints_idx=find(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:)==max(length(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:))));
+% %     min(nnz(~isnan(epochdataTouchB.A_InitialFixationReleaseTime_ms.timepoints(TrialLists,:))))
+%     hold on
+% 	yyaxis right
+% 	OverLayPlotsVergence = plot(epochdataRegisteredGazeA_poly_right.timepoints(TrialLists(1),:),AverageVergence,'.','Color','m','MarkerSize',8)
+% 	set(gca,'ylim',[-50 50])
+% 	
+% 	hold on
+%     if a==1
+% 		yyaxis left
+%         ylabel('A selected Own Colour \newline Y-Coordinates','FontSize',15)
+%                 
+%     end
+%     if a==3
+%         xlabel('Time(secs) \newline B selected Own Colour','FontSize',15)     
+% 		yyaxis left 
+%         ylabel('A selected Other"s Colour \newline Y-Coordinates','FontSize',15)
+%     end
+%     if a==4
+%         xlabel('Time(secs) \newline B selected Other"s Colour','FontSize',15)
+%     end
+%     if counter>=1 && counter<=4 
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightTopAlignedtoAIFR.pdf'))
+%         
+%     end
+%     if counter>=5 && counter<=8 
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightCenterAlignedtoAIFR.pdf'))
+%         
+%     end
+%     if counter>=9 && counter<=12  
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveRightBottomAlignedtoAIFR.pdf'))
+%         
+%     end
+%     if counter>=13 && counter<=16 
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftTopAlignedtoAIFR.pdf'))
+%         
+%     end
+%     if counter>=17 && counter<=20  
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftCenterAlignedtoAIFR.pdf'))
+%         
+%     end
+%     if counter>=21 && counter<=24 
+%         write_out_figure(gcf, fullfile(saving_dir,'_YRegPolyFixTime_Blocked_Red_ObjectiveLeftBottomAlignedtoAIFR.pdf'))
+%     end
+% end
 
 
 

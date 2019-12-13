@@ -1,4 +1,4 @@
-function [Cur_fh_RTbyChoiceCombinationSwitches, merged_classifier_char_string] = rn_reactiontime_switching_block_trials(fileID)
+ function [Cur_fh_RTbyChoiceCombinationSwitches_blocked,Cur_fh_RTbyChoiceCombinationSwitches_unblocked merged_classifier_char_string] = rn_reactiontime_switching_block_trials(sessionID_list)
 
 if ~exist('fileID', 'var') || isempty(fileID)
 	fileID= '20190320T095244.A_Elmo.B_JK.SCP_01';
@@ -6,31 +6,29 @@ end
 
 if (ispc)
 	saving_dir='C:\taskcontroller\SCP_DATA\ANALYSES\GazeAnalyses';
-	data_root_str = 'C:';
-	data_dir = fullfile(data_root_str, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190320', [fileID, '.sessiondir']);
-	output_dir = pwd;
-	
+	data_root_str = fullfile('C:', 'SCP');
+	data_base_dir = fullfile('Y:');	
 else
 	data_root_str = '/';
-	saving_dir = fullfile(data_root_str, 'Users', 'rnocerino', 'DPZ', 'taskcontroller', 'SCP_DATA', 'ANALYSES', 'GazeAnalyses_RN');
 	data_base_dir = fullfile(data_root_str, 'Users', 'rnocerino', 'DPZ');
-	
 	% network!
-	data_base_dir = fullfile(data_root_str, 'Volumes', 'social_neuroscience_data');
-	
-	year_string = fileID(1:4);
-	date_string = fileID(3:8);
-	
-	data_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', year_string , date_string , [fileID, '.sessiondir']);
-	output_dir = pwd;
+	data_base_dir = fullfile(data_root_str, 'Volumes', 'social_neuroscience_data', 'taskcontroller');
 end
-
-sessionID_list = {'20190320T095244.A_Elmo.B_JK.SCP_01',...
-	'20190321T083454.A_Elmo.B_JK.SCP_01',...
-	'20190322T083726.A_Elmo.B_JK.SCP_01',...
-	'20190329T112049.A_Elmo.B_SM.SCP_01',...
-	'20190403T090741.A_Elmo.B_JK.SCP_01',...
-	'20190404T090735.A_Elmo.B_JK.SCP_01'};
+% 
+% year_string = fileID(1:4);
+% date_string = fileID(3:8);
+% 
+% data_dir = fullfile(data_base_dir, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', year_string, date_string, [fileID, '.sessiondir']);
+% saving_dir = fullfile(data_root_str, 'Users', 'rnocerino', 'DPZ', 'taskcontroller', 'SCP_DATA', 'ANALYSES', 'GazeAnalyses_RN', [fileID, '.sessiondir']);
+% output_dir = pwd;
+% 
+% 
+% sessionID_list = {'20190320T095244.A_Elmo.B_JK.SCP_01',...
+% 	'20190321T083454.A_Elmo.B_JK.SCP_01',...
+% 	'20190322T083726.A_Elmo.B_JK.SCP_01',...
+% 	'20190329T112049.A_Elmo.B_SM.SCP_01',...
+% 	'20190403T090741.A_Elmo.B_JK.SCP_01',...
+% 	'20190404T090735.A_Elmo.B_JK.SCP_01'};
 
 per_session_trialnumber_offset = 10000;
 for i_session = 1 : length(sessionID_list)
@@ -41,7 +39,7 @@ for i_session = 1 : length(sessionID_list)
 	year_string = sessionID(1:4);
 	date_string = sessionID(3:8);
 	
-	session_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', year_string , date_string , [sessionID, '.sessiondir']);
+	session_dir = fullfile(data_base_dir, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', year_string , date_string , [sessionID, '.sessiondir']);
 	
 	
 	% 	if exist(fullfile(data_dir, [sessionID, '.triallog.v012.mat']), 'file')
@@ -155,7 +153,7 @@ for i_aggregate_meta_type = 1 : length(aggregate_type_meta_list)
 		aggregate_type_list = {current_aggregate_type, current_aggregate_type};
 		
 		
-		[Cur_fh_RTbyChoiceCombinationSwitches, merged_classifier_char_string] = fn_plot_RT_histogram_by_switches(Cur_fh_RTbyChoiceCombinationSwitches_blocked , RT_by_switch_struct_list, selected_choice_combinaton_pattern_list, RT_by_switch_title_prefix_list, RT_by_switch_switch_pre_bins_list, RT_by_switch_switch_n_bins_list, RT_by_switch_color_list, aggregate_type_list);
+		[Cur_fh_RTbyChoiceCombinationSwitches_blocked, merged_classifier_char_string] = fn_plot_RT_histogram_by_switches(Cur_fh_RTbyChoiceCombinationSwitches_blocked , RT_by_switch_struct_list, selected_choice_combinaton_pattern_list, RT_by_switch_title_prefix_list, RT_by_switch_switch_pre_bins_list, RT_by_switch_switch_n_bins_list, RT_by_switch_color_list, aggregate_type_list);
 	end
 	
 end
@@ -179,7 +177,7 @@ for i_aggregate_meta_type = 1 : length(aggregate_type_meta_list)
 		aggregate_type_list = {current_aggregate_type, current_aggregate_type};
 		
 		
-		[Cur_fh_RTbyChoiceCombinationSwitches, merged_classifier_char_string] = fn_plot_RT_histogram_by_switches(Cur_fh_RTbyChoiceCombinationSwitches_unblocked, RT_by_switch_struct_list, selected_choice_combinaton_pattern_list, RT_by_switch_title_prefix_list, RT_by_switch_switch_pre_bins_list, RT_by_switch_switch_n_bins_list, RT_by_switch_color_list, aggregate_type_list);
+		[Cur_fh_RTbyChoiceCombinationSwitches_unblocked, merged_classifier_char_string] = fn_plot_RT_histogram_by_switches(Cur_fh_RTbyChoiceCombinationSwitches_unblocked, RT_by_switch_struct_list, selected_choice_combinaton_pattern_list, RT_by_switch_title_prefix_list, RT_by_switch_switch_pre_bins_list, RT_by_switch_switch_n_bins_list, RT_by_switch_color_list, aggregate_type_list);
 	end
 end
 

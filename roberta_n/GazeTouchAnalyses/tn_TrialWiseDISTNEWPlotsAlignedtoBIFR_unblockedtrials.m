@@ -2,9 +2,9 @@
 %%1-8 is 8 conditions : 4 value based and 2 side based conditions. ; 
 %%[Own/Own; OwnOther; Other/Own; Other/Other]X [Red on objective right]
 %%[Own/Own; OwnOther; Other/Own; Other/Other]X [Red on objective left]
-function [DistGazeATouchA, DistGazeATouchB]= tn_TrialWiseDISTNEWPlotsAlignedtoBIFR_unblockedtrials(distGazeATouchA, distGazeATouchB,InterpolatedepochdataRegGazeB_Initial_Fixation_Release_A_poly_right, ModifiedTrialSets, saving_dir, fileID)
+function [DistGazeATouchA, DistGazeATouchB, DistTouchBTouchA]= tn_TrialWiseDISTNEWPlotsAlignedtoBIFR_unblockedtrials(distGazeATouchA, distGazeATouchB,  distTouchBTouchA, InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_right,InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_left, ModifiedTrialSets, saving_dir)
 close all
-Byrewardttype_pos_unblocked_Names=fieldnames(ModifiedTrialSets.Byrewardttype_pos.UnBlockedTrials);
+Byrewardttype_pos_unblocked_Names=fieldnames(ModifiedTrialSets.Byrewardttype_pos.Unblocked);
    
 % ByStimulusPosition_leftrightChoicecategoriesNamesSp=ByChoicePositionColourRewardNames(counter+4);
 % ByStimulusPosition_leftrightChoicecategoriesNamesSpStr=ModifiedTrialSets.ByStimulusPosition_leftrightChoicecategories.(ByStimulusPosition_leftrightChoicecategoriesNamesSp{1});
@@ -14,7 +14,7 @@ TrialNumStr='No. of Trials= ';
 
 for counter= 1:24
     Byrewardttype_posSp=Byrewardttype_pos_unblocked_Names(counter);
-    Byrewardttype_posSpStr=ModifiedTrialSets.Byrewardttype_pos.UnBlockedTrials.(Byrewardttype_posSp{1});
+    Byrewardttype_posSpStr=ModifiedTrialSets.Byrewardttype_pos.Unblocked.(Byrewardttype_posSp{1});
     
     TrialLists=Byrewardttype_posSpStr;
 
@@ -30,78 +30,109 @@ for counter= 1:24
     TrialLists= TrialLists1;
     
     
-    if counter==1 
+      if counter==1 
         DistGazeATouchA.Type2401=distGazeATouchA(TrialLists,:);
         DistGazeATouchB.Type2401=distGazeATouchB(TrialLists,:);
+		DistTouchBTouchA.Type2401= distTouchBTouchA(TrialLists,:);
+
     end
     if counter==5|| counter== 9
     DistGazeATouchA.Type2401=vertcat(DistGazeATouchA.Type2401,distGazeATouchA(TrialLists,:));
     DistGazeATouchB.Type2401=vertcat(DistGazeATouchB.Type2401,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2401=vertcat(DistTouchBTouchA.Type2401,distTouchBTouchA(TrialLists,:));
+
     end
     if counter==2 
-        DistGazeATouchA.Type2402=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2402=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2402 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2402 = distGazeATouchB(TrialLists,:);
+		DistTouchBTouchA.Type2402 = distTouchBTouchA(TrialLists,:)
     end
     if counter==6|| counter== 10
-    DistGazeATouchA.Type2402=vertcat(DistGazeATouchA.Type2402,distGazeATouchA(TrialLists,:));
-    DistGazeATouchB.Type2402=vertcat(DistGazeATouchB.Type2402,distGazeATouchB(TrialLists,:));
+    DistGazeATouchA.Type2402 = vertcat(DistGazeATouchA.Type2402,distGazeATouchA(TrialLists,:));
+    DistGazeATouchB.Type2402 = vertcat(DistGazeATouchB.Type2402,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2402 = vertcat(DistTouchBTouchA.Type2402,distTouchBTouchA(TrialLists,:));
+
     end
     if counter==3 
-        DistGazeATouchA.Type2403=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2403=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2403 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2403 = distGazeATouchB(TrialLists,:);
+	    DistTouchBTouchA.Type2403 = distTouchBTouchA(TrialLists,:)
+
     end
     if counter==7|| counter== 11
     DistGazeATouchA.Type2403=vertcat(DistGazeATouchA.Type2403,distGazeATouchA(TrialLists,:));
     DistGazeATouchB.Type2403=vertcat(DistGazeATouchB.Type2403,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2403 = vertcat(DistTouchBTouchA.Type2403,distTouchBTouchA(TrialLists,:));
+
     end
     
     if counter==4 
-        DistGazeATouchA.Type2404=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2404=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2404 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2404 = distGazeATouchB(TrialLists,:);
+	    DistTouchBTouchA.Type2404 = distTouchBTouchA(TrialLists,:)
+
     end
     if counter==8|| counter== 12
-    DistGazeATouchA.Type2404=vertcat(DistGazeATouchA.Type2404,distGazeATouchA(TrialLists,:));
-    DistGazeATouchB.Type2404=vertcat(DistGazeATouchB.Type2404,distGazeATouchB(TrialLists,:));
+    DistGazeATouchA.Type2404 = vertcat(DistGazeATouchA.Type2404,distGazeATouchA(TrialLists,:));
+    DistGazeATouchB.Type2404 = vertcat(DistGazeATouchB.Type2404,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2404 = vertcat(DistTouchBTouchA.Type2404,distTouchBTouchA(TrialLists,:));
+
     end
     
     if counter==13 
-        DistGazeATouchA.Type2405=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2405=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2405 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2405 = distGazeATouchB(TrialLists,:);
+	    DistTouchBTouchA.Type2405 = distTouchBTouchA(TrialLists,:)
+
     end
     if counter==17|| counter== 21
-    DistGazeATouchA.Type2405=vertcat(DistGazeATouchA.Type2405,distGazeATouchA(TrialLists,:));
-    DistGazeATouchB.Type2405=vertcat(DistGazeATouchB.Type2405,distGazeATouchB(TrialLists,:));
+    DistGazeATouchA.Type2405 = vertcat(DistGazeATouchA.Type2405,distGazeATouchA(TrialLists,:));
+    DistGazeATouchB.Type2405 = vertcat(DistGazeATouchB.Type2405,distGazeATouchB(TrialLists,:));
+    DistTouchBTouchA.Type2405 = vertcat(DistTouchBTouchA.Type2405,distTouchBTouchA(TrialLists,:));
+
     end
     if counter==14
-        DistGazeATouchA.Type2406=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2406=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2406 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2406 = distGazeATouchB(TrialLists,:);
+	    DistTouchBTouchA.Type2406 = distTouchBTouchA(TrialLists,:)
+
     end
     if counter==18|| counter== 22
-    DistGazeATouchA.Type2406=vertcat(DistGazeATouchA.Type2406,distGazeATouchA(TrialLists,:));
-    DistGazeATouchB.Type2406=vertcat(DistGazeATouchB.Type2406,distGazeATouchB(TrialLists,:));
+    DistGazeATouchA.Type2406 = vertcat(DistGazeATouchA.Type2406,distGazeATouchA(TrialLists,:));
+    DistGazeATouchB.Type2406 = vertcat(DistGazeATouchB.Type2406,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2406 = vertcat(DistTouchBTouchA.Type2406,distTouchBTouchA(TrialLists,:));
+
     end
     if counter==15 
-        DistGazeATouchA.Type2407=distGazeATouchA(TrialLists,:);
-        DistGazeATouchB.Type2407=distGazeATouchB(TrialLists,:);
+        DistGazeATouchA.Type2407 = distGazeATouchA(TrialLists,:);
+        DistGazeATouchB.Type2407 = distGazeATouchB(TrialLists,:);
+	    DistTouchBTouchA.Type2407 = distTouchBTouchA(TrialLists,:)
+
     end
     if counter==19|| counter== 23
-    DistGazeATouchA.Type2407=vertcat(DistGazeATouchA.Type2407,distGazeATouchA(TrialLists,:));
-    DistGazeATouchB.Type2407=vertcat(DistGazeATouchB.Type2407,distGazeATouchB(TrialLists,:));
+    DistGazeATouchA.Type2407 = vertcat(DistGazeATouchA.Type2407,distGazeATouchA(TrialLists,:));
+    DistGazeATouchB.Type2407 = vertcat(DistGazeATouchB.Type2407,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2407 = vertcat(DistTouchBTouchA.Type2407,distTouchBTouchA(TrialLists,:));
+
     end
     
     if counter==16 
         if isempty(TrialLists)
                 DistGazeATouchA.Type2408(1,1:(size(DistGazeATouchA.Type2407,2)))=NaN;
                 DistGazeATouchB.Type2408(1,1:(size(DistGazeATouchB.Type2407,2)))=NaN;
+				DistTouchBTouchA.Type2408(1,1:(size(DistTouchBTouchA.Type2407,2)))=NaN;
+
         else    
                
             DistGazeATouchA.Type2408=distGazeATouchA(TrialLists,:);
             DistGazeATouchB.Type2408=distGazeATouchB(TrialLists,:);
+			DistTouchBTouchA.Type2408=distTouchBTouchA(TrialLists,:);
         end    
     end
     if counter==20|| counter== 24
     DistGazeATouchA.Type2408=vertcat(DistGazeATouchA.Type2408,distGazeATouchA(TrialLists,:));
     DistGazeATouchB.Type2408=vertcat(DistGazeATouchB.Type2408,distGazeATouchB(TrialLists,:));
+	DistTouchBTouchA.Type2408=vertcat(DistTouchBTouchA.Type2408,distTouchBTouchA(TrialLists,:));
     end
     
     
@@ -130,22 +161,22 @@ for counter= 1:24
     subplot(2,2,a);
     
     str=strcat(TrialNumStr, num2str(size((TrialLists),1)));
-    text(0.65,380,str);
+    text(0.65,530,str);
     if a==1
         strCond='A-Own/B-Own';
-        text(0.65,420,strCond);
+        text(0.65,550,strCond);
     end
     if a==2
         strCond='A-Own/B-Other';
-        text(0.65,420,strCond);
+        text(0.65,550,strCond);
     end
     if a==3
         strCond='A-Other/B-Own';
-        text(0.65,420,strCond);
+        text(0.65,550,strCond);
     end
     if a==4
         strCond='A-Other/B-Other';
-        text(0.65,420,strCond);
+        text(0.65,550,strCond);
     end
     yL = get(gca,'YLim');    
     
@@ -156,19 +187,25 @@ for counter= 1:24
     hold on
     line(xL,[0 0],'Color','k');
     
+    AveragedistGazeATouchA = mean(distGazeATouchA(TrialLists,:),1);
+	AveragedistGazeATouchB = mean (distGazeATouchB(TrialLists,:),1);
+	AveragedistTouchBTouchA = mean (distTouchBTouchA(TrialLists,:),1);
     
-    
-    AbsDistGazeATouchAOverlay=plot(InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_right.timepoints(TrialLists,:),distGazeATouchA(TrialLists,:),'.','Color','r');
+    DistGazeATouchAOverlay = plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists,:),distGazeATouchA(TrialLists,:),'.','Color','r','LineWidth',2);
     hold on
-    AbsDistGazeATouchBOverlay=plot(InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_right.timepoints(TrialLists,:),distGazeATouchB(TrialLists,:),'.','Color','b');
+    DistGazeATouchBOverlay = plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists,:),distGazeATouchB(TrialLists,:),'.','Color','b','LineWidth',2);
     hold on
-    
-    AbsDistGazeATouchAAVGOverlay=plot(InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_right.timepoints(TrialLists,:),mean(distGazeATouchA(TrialLists,:)),'*','Color','r');
-    hold on
-    AbsDistGazeATouchBAVGOverlay=plot(InterpepochdataRegGazeB_Initial_Fixation_Release_A_poly_right.timepoints(TrialLists,:),mean(distGazeATouchB(TrialLists,:)),'*','Color','b');
-    hold on
+	DistTouchBTouchAOverlay = plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists,:),distTouchBTouchA(TrialLists,:),'.','Color','m','LineWidth',2);
+    hold on 
+	DistGazeATouchAAVGOverlay=plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists(1),:),AveragedistGazeATouchA,'*','Color','y','LineWidth',2);
+	hold on
+	DistGazeATouchBAVGOverlay=plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists(1),:),AveragedistGazeATouchB,'*','Color','g','LineWidth',2;
+	hold on
+	DistTouchBTouchAAVGOverlay=plot(epochdataRegisteredGazeA_poly_right.TargetOnset.timepoints(TrialLists(1),:),AveragedistTouchBTouchA,'*','Color',[1 0.5 0],'LineWidth',2);
+	hold on
 	
-  xlim([-0.2 1])
+    xlim([-0.5 1.8])
+	ylim([0 600])
     yL = get(gca,'YLim');    
     hold on
     line([0 0],yL,'Color','g');
@@ -188,27 +225,27 @@ for counter= 1:24
     
     
     if counter>=1 && counter<=4 
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightTopAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightTopAlignedtoBIFR.pdf']))
         
     end
     if counter>=5 && counter<=8 
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightCenterAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightCenterAlignedtoBIFR.pdf']))
         
     end
     if counter>=9 && counter<=12  
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightBottomAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveRightBottomAlignedtoBIFR.pdf']))
         
     end
     if counter>=13 && counter<=16 
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftTopAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftTopAlignedtoBIFR.pdf']))
         
     end
     if counter>=17 && counter<=20  
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftCenterAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftCenterAlignedtoBIFR.pdf']))
         
     end
     if counter>=21 && counter<=24 
-        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftBottomAlignedtoBIFR.jpg']))
+        saveas(gcf, fullfile(saving_dir,[fileID, '_EuclDiffbwGazeTouchTime_UnBlocked_Red_ObjectiveLeftBottomAlignedtoBIFR.pdf']))
     end
 end
 

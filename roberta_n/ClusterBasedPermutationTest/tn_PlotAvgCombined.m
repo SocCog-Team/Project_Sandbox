@@ -4,15 +4,15 @@ function [] = tn_PlotAvgCombined (FullStructure,saving_dir, fileID)
 b = 0;
 TrialNumStr = 'No. of Trials= ';
 
-last_a = 7; % 1-8
-
-for a = 1 : last_a
+last_a = 8; % 1-8
+for a = 1:last_a
     
     TrialListsAA = FullStructure(a).AA;
-    TrialListsAB = FullStructure(a).AB;
+	TrialListsAB = FullStructure(a).AB;
     TrialListsTimepoints = FullStructure(a).Timepoints;
     TrialListsAT= FullStructure(a).AT;
-    TrialListsAIFR = FullStructure(a).AIFRvalues;
+%     TrialListsAIFR = FullStructure(a).AIFRvalues;
+
 %     TrialListsScores = FullStructure(a).PermScores;
 % Names=fieldnames(SampleA);
 % b=0;
@@ -42,14 +42,14 @@ for a = 1 : last_a
         b = 1;
 	end
 	
-    AVGBIFRalignedAIFR = mean(TrialListsAIFR, 1, 'omitnan');
+    %AVGBIFRalignedAIFR = mean(TrialListsAIFR, 1, 'omitnan');
     AvgA = mean(TrialListsAA, 1, 'omitnan');
 	STD_A = std(TrialListsAA, 'omitnan');
     SEM_A = std(TrialListsAA, 'omitnan') / size(TrialListsAA, 1);
 	AA_isNotNaN_array = ~isnan(TrialListsAA);
 	AA_N_per_bin_list = sum(AA_isNotNaN_array, 1);
     [A_CIHW95] = calc_cihw(STD_A, AA_N_per_bin_list, 0.05);	
-%     [A_CIHW95] = calc_cihw(STD_A, (size((TrialListsAA),1)), 0.05);
+%   [A_CIHW95] = calc_cihw(STD_A, (size((TrialListsAA),1)), 0.05);
     A_CIHW95(A_CIHW95 == 0) = NaN;
 	
     AvgB = mean(TrialListsAB, 1, 'omitnan');
@@ -109,10 +109,10 @@ for a = 1 : last_a
     line(xL,[0 0],'Color','k');
     hold on
     
-%     [Clusters, ListSignClusters]= tn_PlottingClusters(TrialListsScores, TrialListsTimepoints);
-%     hold on
-%     [AClosertoZero BClosertoZero]=tn_ClosertoZero(AvgA,AvgB, TrialListsTimepoints);
-%      hold on
+    [Clusters, ListSignClusters]= tn_PlottingClusters(TrialListsScores, TrialListsTimepoints);
+    hold on
+    [AClosertoZero BClosertoZero]=tn_ClosertoZero(AvgA,AvgB, TrialListsTimepoints);
+     hold on
     [AClosertoZero BClosertoZero]=tn_ClosertoZerowithTarget(AvgA,AvgB,AvgT, TrialListsTimepoints);
     hold on
     plot((TrialListsTimepoints(6,:)),AvgA,'Color','r', 'LineWidth',2);
@@ -133,7 +133,7 @@ for a = 1 : last_a
     plot((TrialListsTimepoints(6,:)),AvgB-B_CIHW95,'Color','b', 'LineWidth',0.5, 'LineStyle', '--');
     plot((TrialListsTimepoints(6,:)),AvgA+A_CIHW95,'Color','r', 'LineWidth',0.5, 'LineStyle', '--');
     plot((TrialListsTimepoints(6,:)),AvgA-A_CIHW95,'Color','r', 'LineWidth',0.5, 'LineStyle', '--');
-     plot((TrialListsTimepoints(6,:)),AvgT+T_CIHW95,'Color','k', 'LineWidth',0.5, 'LineStyle', '--');
+    plot((TrialListsTimepoints(6,:)),AvgT+T_CIHW95,'Color','k', 'LineWidth',0.5, 'LineStyle', '--');
     plot((TrialListsTimepoints(6,:)),AvgT-T_CIHW95,'Color','k', 'LineWidth',0.5, 'LineStyle', '--');
     
     

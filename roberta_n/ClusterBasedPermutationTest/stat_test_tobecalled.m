@@ -53,7 +53,7 @@ rn_PlotAvgCombined_Touch_different_conditions_unblocked(FullStructure_unblockedT
 %COMPARISON BETWEEN TOUCH A BLOCKED BETWEEN OWN/OWN AND OWN/OTHER +
 %OTHER/OWN AND OTHER/OTHER : TARGET ONSET 
 [scores_blockedTouchAVSblockedTouchA, FullStructure_blockedTouchAVSblockedTouchA] = rn_StructureDataforPermTest_differentcondition_blocked(FullStructure_blocked_Touch);
-rn_PlotAvgCombined_Touch_different_conditions_blocked (FullStructure_blockedTouchAVSblockedTouch, FullStructure_blocked_Touch, saving_dir)
+rn_PlotAvgCombined_Touch_different_conditions_blocked (FullStructure_blockedTouchAVSblockedTouchA, FullStructure_blocked_Touch, saving_dir)
 
 %COMPARISON BETWEEN TOUCH B UNBLOCKED AND TOUCH B BLOCKED: TARGET ONSET 
 [scores_unblockedTouchBVSblockedTouchB, FullStructure_unblockedTouchBVSblockedTouchB] = rn_StructureDataforPermTest_B(FullStructure_unblocked_Touch,FullStructure_blocked_Touch);
@@ -158,7 +158,7 @@ rn_PlotAvgCombinedTouchAunblockedVSTouchAblocked_BIFR(FullStructure_unblockedTou
 rn_PlotAvgCombined_Touch_different_conditions_unblocked_BIFR(FullStructure_unblockedTouchAVSunblockedTouchA_BIFR,FullStructure_unblocked_BIFR_Touch,saving_dir);
 %COMPARISON BETWEEN TOUCH A BLOCKED BETWEEN OWN/OWN AND OWN/OTHER +
 %OTHER/OWN AND OTHER/OTHER : BIFR 
-[scores_blockedTouchAVSblockedTouchA, FullStructure_blockedTouchAVSblockedTouchA_BIFR] = rn_StructureDataforPermTest_differentcondition_blocked(FullStructure_blocked_BIFR_Touch);
+[scores_blockedTouchAVSblockedTouchA_BIFR, FullStructure_blockedTouchAVSblockedTouchA_BIFR] = rn_StructureDataforPermTest_differentcondition_blocked(FullStructure_blocked_BIFR_Touch);
 rn_PlotAvgCombined_Touch_different_conditions_blocked_BIFR (FullStructure_blockedTouchAVSblockedTouchA_BIFR, FullStructure_blocked_BIFR_Touch, saving_dir)
 
 

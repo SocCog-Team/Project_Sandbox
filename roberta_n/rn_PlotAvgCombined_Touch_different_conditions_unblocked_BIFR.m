@@ -126,7 +126,7 @@ for a = 1:8
 % 	end
 	
 	xlim([-0.5 1.3]);
-	ylim([-500 +500]);
+	ylim([650 1200]);
 	yL = get(gca,'YLim');
 	hold on
 	line([0 0],yL,'Color','b');
@@ -265,7 +265,7 @@ for a=1:length(Clusters);
 	LengthClusterTimes=length(ClusterTimes);
 	% x1=abc(1): 1: abc(2);
 	PlotClusterTimes=zeros(LengthClusterTimes,1);
-	PlotClusterTimes(PlotClusterTimes==0)=450;
+	PlotClusterTimes(PlotClusterTimes==0)=1150;
 	PlotClusterTimes=transpose(PlotClusterTimes);
 	%     plot(x1,x);
 	plot(ClusterTimes,PlotClusterTimes, 'LineWidth',7, 'Color', [0.5 0.5 0.5]);
@@ -290,7 +290,7 @@ if length(ListSignClusters(~isnan(ListSignClusters)))>0
 		SignLengthClusterTimes=length(SignClusterTimes);
 		% x1=abc(1): 1: abc(2);
 		PlotSignClusterTimes=zeros(SignLengthClusterTimes,1);
-		PlotSignClusterTimes(PlotSignClusterTimes==0)=500;
+		PlotSignClusterTimes(PlotSignClusterTimes==0)=1200;
 		PlotSignClusterTimes=transpose(PlotSignClusterTimes);
 		%     plot(x1,x);
 		plot(SignClusterTimes,PlotSignClusterTimes, 'LineWidth',7, 'Color', 'k');
@@ -310,7 +310,7 @@ end
 %     plot((ClusterTimes,PlotClusterTimes, 'LineWidth',7, 'Color', 'k');
 % end
 xlim([-0.5 1.3]);
-ylim([-500 +500]);
+ylim([650 1200]);
 
 return
 end

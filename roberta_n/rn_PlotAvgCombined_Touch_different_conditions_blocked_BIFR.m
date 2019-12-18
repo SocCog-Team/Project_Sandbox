@@ -2,7 +2,7 @@ function [] = rn_PlotAvgCombined_Touch_different_conditions_blocked_BIFR (FullSt
 b = 0;
 TrialNumStr = 'N: ';
 
-fieldnames_blocked_A = fieldnames(FullStructure_blocked.A);
+fieldnames_blocked_A = fieldnames(FullStructure_blocked);
 
 for a = 1:8
 	cur_fieldnames_blocked_A = fieldnames_blocked_A{a};

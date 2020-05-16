@@ -24,7 +24,7 @@ session_struct = fnLoadDataBySessionDir(test_session_id);
 
 
 
-chan_names = {'EventIDE_TimeStamp', 'MotitorSpotDetector_LCD_level', 'RenderTriggerDO', 'AccelerationSensor_X', 'AccelerationSensor_Y', 'AccelerationSensor_Z'};
+chan_names = {'EventIDE_TmeStamp', 'MotitorSpotDetector_LCD_level', 'RenderTriggerDO', 'AccelerationSensor_X', 'AccelerationSensor_Y', 'AccelerationSensor_Z'};
 			
 %LogHeader: {'Timestamp'  'Dev1/ai0'  'Dev1/ai1'  'Dev1/ai2'}
 ADC_data = session_struct.signallog_NISignalFileWriterADC;

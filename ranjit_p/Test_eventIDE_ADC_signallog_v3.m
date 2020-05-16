@@ -1,4 +1,4 @@
-function [ output_args ] = Test_eventIDE_ADC_signallog_v4( input_args )
+function [ output_args ] = Test_eventIDE_ADC_signallog_v3( input_args )
 %TEST_EVENTIDE_ADC_SIGNALLOG Summary of this function goes here
 %   Detailed explanation goes here
 

@@ -200,12 +200,12 @@ pd_onset_sample_timestamp_diff_list = diff([pd_onset_sample_timestamp_list(1); p
 pd_offset_sample_timestamp_diff_list = diff([pd_offset_sample_timestamp_list(1); pd_offset_sample_timestamp_list]);
 
 
-figure('Name', 'PhotoDiodeInterOnsetInterval')
+%figure('Name', 'PhotoDiodeInterOnsetInterval')
 %histogram((pd_onset_sample_timestamp_diff_list(find((pd_onset_sample_timestamp_diff_list * 1000) < 30)) * 1000));
 %pd_onset_sample_timestamp_diff_list * 1000
 tmp_data_idx = pd_onset_sample_timestamp_diff_list <= (30);
 tmp_data = pd_onset_sample_timestamp_diff_list(tmp_data_idx);
-histogram( tmp_data );
+%histogram( tmp_data );
 % calculate the screen refresh times:
 avg_interframe_delay_ms = mean(tmp_data(find(tmp_data <= 16 & tmp_data >= 5)));
 avg_screen_framerate = 1000/avg_interframe_delay_ms;
@@ -237,13 +237,13 @@ for i_onset = 1 : length(rt_onset_sample_timestamp_list)
 	cur_onset_time = rt_onset_sample_timestamp_list(i_onset);
 	onset_photodiode_rendertime_delta(i_onset) = min(abs(cur_onset_time - render_timestamps_list));
 end
-figure('Name', 'RenderTrigger versus RendeTimes');
-histogram(onset_photodiode_rendertime_delta, (0:0.1:20));
+%figure('Name', 'RenderTrigger versus RendeTimes');
+%histogram(onset_photodiode_rendertime_delta, (0:0.1:20));
 
 
 if (use_PhotoDiodeRenderer)
 	
-	figure('Name', 'PhotoDiodeSignalOnset versus PhotoDiodeRenderTimestamp')
+	%figure('Name', 'PhotoDiodeSignalOnset versus PhotoDiodeRenderTimestamp')
 	onset_photodiode_rendertrigger_delta = zeros(size(pd_block_onset_timestamp_list));
 	onset_photodiodeAI_photodiode_rendertrigger_delta = zeros(size(pd_block_onset_timestamp_list));
 	% try to find the best matching photo diode render timestamp in pd_render_onset_timestamps
@@ -252,34 +252,33 @@ if (use_PhotoDiodeRenderer)
 		onset_photodiode_rendertrigger_delta(i_onset) = min(abs(cur_pd_block_onset_time - rt_onset_sample_timestamp_list));
 		onset_photodiodeAI_photodiode_rendertrigger_delta(i_onset) = min(abs(cur_pd_block_onset_time - pd_render_onset_timestamps));
 	end
-	legend_text = {};
-	subplot(1, 2, 1)
-	histogram(onset_photodiode_rendertrigger_delta, (30:1:100));
-	legend_text{end+1} = 'NIRenderTriggerDO';
-	hold on
-	histogram(onset_photodiodeAI_photodiode_rendertrigger_delta, (30:1:100));
-	legend_text{end+1} = 'PhotoDiodeOnset';
-	hold off
-	legend(legend_text);
-	subplot(1, 2, 2)
+	%legend_text = {};
+	%subplot(1, 2, 1)
+	%histogram(onset_photodiode_rendertrigger_delta, (30:1:100));
+	%legend_text{end+1} = 'NIRenderTriggerDO';
+	%hold on
+	%histogram(onset_photodiodeAI_photodiode_rendertrigger_delta, (30:1:100));
+	%legend_text{end+1} = 'PhotoDiodeOnset';
+	%hold off
+	%legend(legend_text);
+	%subplot(1, 2, 2)
 	
 	%plot(onset_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
-	plot(onset_photodiodeAI_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
+	%plot(onset_photodiodeAI_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
 
 	hold on
 	x_lim = get(gca(), 'XLim');
 	frame_period_ms = 1000 / frame_rate_hz;
-	for i_frame = 2 : 5
-		plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
-	end
+	%for i_frame = 2 : 5
+	%	plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
+	%end
 	%plot(onset_photodiode_rendertime_delta, 'Color', [1 0 0]);
-	x_lim = get(gca(), 'XLim');
+%	x_lim = get(gca(), 'XLim');
 	frame_period_ms = 1000 / frame_rate_hz;
-	for i_frame = 2 : 5
-		plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
-	end
-	set(gca(), 'YLim', [0 100]);
-	hold off
+%	for i_frame = 2 : 5
+%		plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
+%	end
+%	hold off
 	
 
 end
@@ -292,11 +291,11 @@ for i_onset = 1 : length(pd_block_onset_timestamp_list)
 	onset_photodiode_rendertrigger_delta(i_onset) = min(abs(cur_pd_block_onset_time - rt_onset_sample_timestamp_list));
 	onset_photodiode_rendertime_delta(i_onset) = min(abs(cur_pd_block_onset_time - render_timestamps_list));
 end
-figure('Name', 'BlockOnset versus Trigger/Time');
-histogram(onset_photodiode_rendertrigger_delta, (30:1:100));
-hold on
-histogram(onset_photodiode_rendertime_delta, (30:1:100));
-hold off
+%figure('Name', 'BlockOnset versus Trigger/Time');
+%histogram(onset_photodiode_rendertrigger_delta, (30:1:100));
+%hold on
+%histogram(onset_photodiode_rendertime_delta, (30:1:100));
+%hold off
 
 
 offset_photodiode_rendertrigger_delta = zeros(size(pd_block_offset_timestamp_list));
@@ -306,28 +305,28 @@ for i_offset = 1 : length(pd_block_offset_timestamp_list)
 	offset_photodiode_rendertrigger_delta(i_offset) = min(abs(cur_pd_block_offset_time - rt_onset_sample_timestamp_list));
 	offset_photodiode_rendertime_delta(i_offset) = min(abs(cur_pd_block_offset_time - render_timestamps_list));
 end
-figure('Name', 'BlockOffset versus Trigger/Time');
-histogram(offset_photodiode_rendertrigger_delta, (30:1:100));
-hold on
-histogram(offset_photodiode_rendertime_delta, (30:1:100));
-hold off
+%figure('Name', 'BlockOffset versus Trigger/Time');
+%histogram(offset_photodiode_rendertrigger_delta, (30:1:100));
+%hold on
+%histogram(offset_photodiode_rendertime_delta, (30:1:100));
+%hold off
 
 
-figure('Name', 'BlockOnset versus Trigger/Time per event');
-plot(onset_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
-hold on
+%figure('Name', 'BlockOnset versus Trigger/Time per event');
+%plot(onset_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
+%hold on
 x_lim = get(gca(), 'XLim');
 frame_period_ms = 1000 / frame_rate_hz;
-for i_frame = 2 : 5
-	plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
-end
-plot(onset_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
+%for i_frame = 2 : 5
+%	plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
+%end
+%plot(onset_photodiode_rendertrigger_delta, 'Color', [0 1 0]);
 %plot(onset_photodiode_rendertime_delta, 'Color', [1 0 0]);
 x_lim = get(gca(), 'XLim');
 frame_period_ms = 1000 / frame_rate_hz;
-for i_frame = 2 : 5
-	plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
-end
+%for i_frame = 2 : 5
+%	plot(x_lim, [frame_period_ms*i_frame, frame_period_ms*i_frame], 'Color', [0 0 0]);
+%end
 set(gca(), 'YLim', [0 100]);
 hold off
 
@@ -340,33 +339,33 @@ sample_end = length(time_vec);
 %sample_end = 30000;
 sample_subset = (1+sample_offset:1:sample_end);
 
-figure('Name', 'RenderTrigger')
-plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai0)); % the photo diode signal
-hold on
+%figure('Name', 'RenderTrigger')
+%plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai0)); % the photo diode signal
+%hold on
 
 % what is going on with the timestamps
 
 
-plot(uncorr_time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai0), 'Color', [0 0 0.33]); % the photo diode signal
+%plot(uncorr_time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai0), 'Color', [0 0 0.33]); % the photo diode signal
 
 
 y_lim = get(gca(), 'YLim');
-for i_render_timestamps = 1 : length(render_timestamps)
-	plot([render_timestamps(i_render_timestamps), render_timestamps(i_render_timestamps)], y_lim, 'Color', [0 1 0]);
-end
-plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai1), 'Color', [1 0 0]);
-plot(uncorr_time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai1), 'Color', [0.33 0 0]);
+%for i_render_timestamps = 1 : length(render_timestamps)
+%	plot([render_timestamps(i_render_timestamps), render_timestamps(i_render_timestamps)], y_lim, 'Color', [0 1 0]);
+%end
+%plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai1), 'Color', [1 0 0]);
+%plot(uncorr_time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai1), 'Color', [0.33 0 0]);
 
 
-for i_pd_block_onset_timestamp = 1 : length(pd_block_onset_timestamp_list)
-	plot([pd_block_onset_timestamp_list(i_pd_block_onset_timestamp), pd_block_onset_timestamp_list(i_pd_block_onset_timestamp)], y_lim, 'Color', [1 0 1]);
-end
-for i_pd_block_offset_timestamp = 1 : length(pd_block_offset_timestamp_list)
-	plot([pd_block_offset_timestamp_list(i_pd_block_offset_timestamp), pd_block_offset_timestamp_list(i_pd_block_offset_timestamp)], y_lim, 'Color', [0 0 0]);
-end
+%for i_pd_block_onset_timestamp = 1 : length(pd_block_onset_timestamp_list)
+%	plot([pd_block_onset_timestamp_list(i_pd_block_onset_timestamp), pd_block_onset_timestamp_list(i_pd_block_onset_timestamp)], y_lim, 'Color', [1 0 1]);
+%end
+%for i_pd_block_offset_timestamp = 1 : length(pd_block_offset_timestamp_list)
+%	plot([pd_block_offset_timestamp_list(i_pd_block_offset_timestamp), pd_block_offset_timestamp_list(i_pd_block_offset_timestamp)], y_lim, 'Color', [0 0 0]);
+%end
 xlim([time_vec(1+sample_offset), time_vec(sample_end)]);
-hold off
-xlabel('Samples');
+%hold off
+%xlabel('Samples');
 
 
 
@@ -378,6 +377,7 @@ plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai3)
 hold on
 xlabel('Samples');
 y_lim = get(gca(), 'YLim');
+
 
 for i_IFtouch_onset = 1 : length(IF_touch_onset_list)
 	plot([IF_touch_onset_list(i_IFtouch_onset), IF_touch_onset_list(i_IFtouch_onset)], y_lim, 'Color', [0 1 0]);
@@ -392,25 +392,101 @@ for i_pd_block_offset_timestamp = 1 : length(pd_block_offset_timestamp_list)
 	plot([pd_block_offset_timestamp_list(i_pd_block_offset_timestamp), pd_block_offset_timestamp_list(i_pd_block_offset_timestamp)], y_lim, 'Color', [0 0 0]);
 end
 
+
+
 % the accelerometer traces
-figure('Name', 'ADC Test Chunk size');
+%figure('Name', 'ADC Test Chunk size');
+figure('Name', 'ADC detrend');
 %subplot(3, 1, 1)
 title(chan_names{2});
 my_sample_subset = (1:1:6000);
 my_sample_subset = sample_subset;
+de_trend_ai2= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
+de_trend_ai3= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
+de_trend_ai4= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
 %plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
-%plot(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai0));
+%plot(time_vec(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai0));
 hold on
-%plot(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai1));
-plot(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
-plot(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
-plot(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
+%plot(time_vec(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai1));
+%plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
+%plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
+%plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
+
+plot(time_vec(my_sample_subset),de_trend_ai2);
+plot(time_vec(my_sample_subset), de_trend_ai3);
+plot(time_vec(my_sample_subset), de_trend_ai4);
+
+
+
 legend(chan_names(4:end), 'Interpreter', 'none');
+
+y_lim = get(gca(), 'YLim');
+
+for i_IFtouch_onset = 1 : length(IF_touch_onset_list)
+	plot([IF_touch_onset_list(i_IFtouch_onset), IF_touch_onset_list(i_IFtouch_onset)], y_lim, 'Color', [0 1 0]);
+end
+for i_IFtouch_offset = 1 : length(IF_touch_offset_list)
+	plot([IF_touch_offset_list(i_IFtouch_offset), IF_touch_offset_list(i_IFtouch_offset)], y_lim, 'Color', [1 0 1]);
+end
+
+
+
 
 hold off
 xlabel('Samples');
 y_lim = get(gca(), 'YLim');
 
+lpFilt = designfilt('lowpassiir','FilterOrder',2, ...
+         'PassbandFrequency',1e3,'PassbandRipple',0.2, ...
+         'SampleRate',2e3);
+
+	 
+lp_filtered_data_ai2= filter(lpFilt,de_trend_ai2);
+lp_filtered_data_ai3=filter(lpFilt,de_trend_ai3);
+lp_filtered_data_ai4=filter(lpFilt,de_trend_ai4); 
+
+figure('Name', 'ADC detrend_lpFiltered');
+title(chan_names{2});
+my_sample_subset = (1:1:6000);
+my_sample_subset = sample_subset;
+hold on
+plot(time_vec(my_sample_subset),lp_filtered_data_ai2);
+plot(time_vec(my_sample_subset),lp_filtered_data_ai3);
+plot(time_vec(my_sample_subset), lp_filtered_data_ai4);
+legend(chan_names(4:end), 'Interpreter', 'none');
+hold off
+
+Velocity_ai2= cumsum(lp_filtered_data_ai2);
+Velocity_ai3= cumsum(lp_filtered_data_ai3);
+Velocity_ai4= cumsum(lp_filtered_data_ai4);
+
+% time_integral= time_vec(my_sample_subset);
+% Velocity_ai2= integral (lp_filtered_data_ai2, time_integral(1), time_integral(end));
+% Velocity_ai3= integral (lp_filtered_data_ai3, time_integral(1), time_integral(end));
+% Velocity_ai4= integral (lp_filtered_data_ai4, time_integral(1), time_integral(end));
+figure('Name','ADC Velocity');
+title(chan_names{2});
+hold on
+plot(time_vec(my_sample_subset),Velocity_ai2);
+plot(time_vec(my_sample_subset),Velocity_ai3);
+plot(time_vec(my_sample_subset), Velocity_ai4);
+legend('Velocity_x', 'velocity_y','velocity_z');
+
+
+hold off
+
+position_ai2=cumsum(Velocity_ai2);
+position_ai3=cumsum(Velocity_ai3);
+position_ai4=cumsum(Velocity_ai4);
+
+figure('Name','ADC Position');
+title(chan_names{2});
+hold on
+plot(time_vec(my_sample_subset),position_ai2);
+plot(time_vec(my_sample_subset),position_ai3);
+plot(time_vec(my_sample_subset),position_ai4);
+legend('position_x', 'position_y','position_z');
+hold off
 
 end
 

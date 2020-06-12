@@ -1,0 +1,275 @@
+function [LateSessions, EarlySessions]=CombineSessions()
+
+EarlySessions.setName={'EarlySessions'};
+EarlySessions.Filenames={'20181121T091506.A_Elmo.B_SM.SCP_01',...
+    '20181123T121605.A_Elmo.B_SM.SCP_01',...
+    '20181127T093819.A_Elmo.B_SM.SCP_01',...
+    '20181128T094141.A_Elmo.B_SM.SCP_01',...
+    '20181129T092325.A_Elmo.B_SM.SCP_01'};
+
+EarlySessions.Captions={'181121',...
+    '181123',...
+    '181127',...
+    '181128',...
+    '181129'};
+
+EarlySessions.Matfilenames={'20181121T091506.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat',...
+    '20181123T121605.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat',...
+    '20181127T093819.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat',...
+    '20181128T094141.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat',...
+    '20181129T092325.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat'};
+
+
+LateSessions.setName='LateSessions';
+LateSessions.Filenames={'20190311T131935.A_Elmo.B_SM.SCP_01',...
+    '20190312T085408.A_Elmo.B_JK.SCP_01',...
+    '20190313T084850.A_Elmo.B_JK.SCP_01',...
+    '20190314T083757.A_Elmo.B_JK.SCP_01',...
+    '20190315T092050.A_Elmo.B_JK.SCP_01',...
+    '20190319T084942.A_Elmo.B_JK.SCP_01',...
+    '20190320T095244.A_Elmo.B_JK.SCP_01'};
+
+LateSessions.Captions={'190311','190312','190313','190314','190315','190319','190320'};
+
+LateSessions.Matfilenames={'20190311T131935.A_Elmo.B_SM.SCP_01.GazeTouchAnalyses.mat',...
+    '20190312T085408.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat',...
+    '20190313T084850.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat',...
+    '20190314T083757.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat',...
+    '20190315T092050.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat',...
+    '20190319T084942.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat',...
+    '20190320T095244.A_Elmo.B_JK.SCP_01.GazeTouchAnalyses.mat'};
+ 
+saving_dir='C:\taskcontroller\SCP_DATA\SCP-CTRL-01\SESSIONLOGS\2019';
+for counter=1: size(LateSessions.Matfilenames,2)
+    LateSessions.MatFiles(counter).IndSession=load(cell2str(fullfile(saving_dir, LateSessions.Captions(counter), strcat(LateSessions.Filenames(counter),'.sessiondir\'), LateSessions.Matfilenames(counter))));
+end  
+for counter=1: size(LateSessions.Matfilenames,2)
+    [LateSessions.MatFiles(counter).IndSession.EpochWiseData]=tn_DistGazeTarget(LateSessions.MatFiles(counter).IndSession.EpochWiseData)
+end
+for counter=1: size(LateSessions.Matfilenames,2)
+    Names=fieldnames(LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA);
+    for counter2= 1:length(Names)
+        Sp=Names(counter2);
+        SpStr=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1});
+       
+        TrialLists=SpStr;
+        
+% % 
+        if isempty(TrialLists)
+            continue; 
+        end
+    
+        if counter==1
+            if isempty(TrialLists)
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(1,1:551)=NaN;
+            
+            else
+            
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AB.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.Timepoints.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AIFRvalues.(Sp{1});
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeGreaterthan50.(Sp{1})(:,1:551);
+            end
+        else
+            if isempty(TrialLists)
+            
+            continue;
+            
+            else
+    
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(:,1:551),LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(:,1:551), LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AB.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(:,1:551), LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.Timepoints.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues,LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AIFRvalues.(Sp{1}));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(:,1:551),LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeGreaterthan50.(Sp{1})(:,1:551));
+            end
+        end
+    end
+    
+end 
+
+
+for counter=1: size(LateSessions.Matfilenames,2)
+    Names=fieldnames(LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA);
+    for counter2= 1:length(Names)
+        Sp=Names(counter2);
+        SpStr=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1});
+       
+        TrialLists=SpStr;
+        
+% 
+        
+        
+        if counter==1
+            if isempty(TrialLists)
+            
+            
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(1,1:551)=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=NaN;
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(1,1:551)=NaN;
+            else
+            
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AB.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.Timepoints.(Sp{1})(:,1:551);
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AIFRvalues.(Sp{1});    
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(:,1:551)=LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeLesserthan50.(Sp{1})(:,1:551);
+            end
+        else
+            
+            if isempty(TrialLists)
+            
+            continue;
+
+            else 
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(:,1:551),LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(:,1:551), LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AB.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(:,1:551), LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.Timepoints.(Sp{1})(:,1:551));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=vertcat(LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues,LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AIFRvalues.(Sp{1}));
+                LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT=vertcat( LateSessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(:,1:551),LateSessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeLesserthan50.(Sp{1})(:,1:551));
+            end
+        end
+    end
+    
+end 
+
+
+
+% %%%EarlySessions
+saving_dir='C:\taskcontroller\SCP_DATA\SCP-CTRL-01\SESSIONLOGS\2018';
+for counter=1: size(EarlySessions.Matfilenames,2)
+    EarlySessions.MatFiles(counter).IndSession=load(cell2str(fullfile(saving_dir, EarlySessions.Captions(counter), strcat(EarlySessions.Filenames(counter),'.sessiondir\'), EarlySessions.Matfilenames(counter))));
+end  
+for counter=1: size(EarlySessions.Matfilenames,2)
+    [EarlySessions.MatFiles(counter).IndSession.EpochWiseData]=tn_DistGazeTarget(EarlySessions.MatFiles(counter).IndSession.EpochWiseData)
+end
+for counter=1: size(EarlySessions.Matfilenames,2)
+%     [EarlySessions.MatFiles(counter).IndSession.EpochWiseData]=tn_DistGazeTarget(EarlySessions.MatFiles(counter).IndSession.EpochWiseData)
+    Names=fieldnames(EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA);
+    for counter2= 1:length(Names)
+        Sp=Names(counter2);
+        SpStr=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1});
+       
+        TrialLists=SpStr;
+        
+% % 
+        if isempty(TrialLists)
+            continue; 
+        end
+        
+        if counter==1
+            if isempty(TrialLists)
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(1,1:551)=NaN;
+            else
+            
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AB.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.Timepoints.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AIFRvalues.(Sp{1});
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeGreaterthan50.(Sp{1})(:,1:551);
+            end
+        else
+            if isempty(TrialLists)
+            
+            continue;
+            
+            else
+    
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AA(:,1:551),EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AA.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AB(:,1:551), EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AB.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).Timepoints(:,1:551), EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.Timepoints.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AIFRvalues,EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Plus50.AIFRvalues.(Sp{1}));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeePlus50(counter2).AT(:,1:551),EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeGreaterthan50.(Sp{1})(:,1:551));
+            end
+        end
+    end
+    
+end 
+
+
+for counter=1: size(EarlySessions.Matfilenames,2)
+    Names=fieldnames(EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA);
+    for counter2= 1:length(Names)
+        Sp=Names(counter2);
+        SpStr=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1});
+       
+        TrialLists=SpStr;
+        
+% 
+        
+        
+        if counter==1
+            if isempty(TrialLists)
+            
+            
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(1,1:551)=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=NaN;
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(1,1:551)=NaN;
+             
+            else
+            
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AB.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.Timepoints.(Sp{1})(:,1:551);
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AIFRvalues.(Sp{1});    
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(:,1:551)=EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeLesserthan50.(Sp{1})(:,1:551);
+            end
+        else
+            
+            if isempty(TrialLists)
+            
+            continue;
+
+            else 
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AA(:,1:551),EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AA.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AB(:,1:551), EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AB.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).Timepoints(:,1:551), EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.Timepoints.(Sp{1})(:,1:551));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues=vertcat(EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AIFRvalues,EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistancebwGazeTouch.Separated.Value_Side_pSee_Based.Less50.AIFRvalues.(Sp{1}));
+                EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT=vertcat( EarlySessions.ClubbedSessions.BIFR.ValueSidepSeeLess50(counter2).AT(:,1:551),EarlySessions.MatFiles(counter).IndSession.EpochWiseData.BIFR.Aligned_Interpolated_Data.DistGazeTarget.pSeeLesserthan50.(Sp{1})(:,1:551));
+            end
+        end
+    end
+    
+end 
+
+end
+
+% LateSessions.MatFiles(1:3).IndSession.
+
+
+
+function str = cell2str(c)
+% Convert a cell array of strings into an array of strings.
+% CELL2STR pads each string in order to force all strings
+% have the same length.
+%
+% Determine the length of each string in cell array c
+nblanks = cellfun(@length, c);
+maxn = max(nblanks);
+nblanks = maxn-nblanks; 
+% Create a cell array of blanks.  Each column of the cell array contains
+% the number of blanks necessary to pad each row of the converted string
+padding = cellfun(@blanks,num2cell(nblanks), 'UniformOutput', false);
+% Concatinate cell array and padding
+str = {c{:}; padding{:}};
+% This operation converts new the cell array into a string
+str = [str{:}];
+% Reshape the string into an array of strings
+ncols = maxn;
+nrows = length(str)/ncols;
+str = reshape(str,ncols,nrows)';
+end
+

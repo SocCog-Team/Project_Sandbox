@@ -55,7 +55,7 @@ process_coordination_metrics = 1;% this roughly doubles the run time
 CoordinationSummaryFileName = 'CoordinationSummary.txt';
 
 TitleSeparator = '_';
-plot_RT_A_vs_B = 1;
+%plot_RT_A_vs_B = 1;
 
 
 
@@ -2606,7 +2606,13 @@ for iGroup = 1 : length(GroupNameList)
 			
 			calculate_correlation = 1;
 			
-			if (plot_RT_A_vs_B)
+            if length(GoodTrialsIdx)>100
+                plot_RT_A_vs_B =1;
+            else
+                plot_RT_A_vs_B = 0;
+            end
+            
+           if (plot_RT_A_vs_B)
 				figure('Name', 'RT_A_vs_B')
 				subplot (1,3,1)
 				SameOwnA_lidx = (PreferableTargetSelected_A == 1) & (PreferableTargetSelected_B == 0);
@@ -2615,13 +2621,7 @@ for iGroup = 1 : length(GroupNameList)
 				DiffOther_lidx = (PreferableTargetSelected_A == 0) & (PreferableTargetSelected_B == 0);
 				Same_lidx = union(SameOwnA_lidx, SameOwnB_lidx);
 				Diff_lidx = union(DiffOwn_lidx, DiffOther_lidx);
-% 				xlim = ([0 1500]);
-% 				ylim = ([0 1500]);
-				%axis([0 1500 0 1500]);
-				%set(gca(), 'XTick', [0, 250, 1500]);
-				%set(gca(), 'YLim', [0.0, 1.0]);
-				%set(gca(), 'YTick', [0, 250, 1500]);
-				%scatter(A_TargetAcquisitionRT(GoodTrialsIdx(JointTrialX_Vector)),B_TargetAcquisitionRT(GoodTrialsIdx(JointTrialX_Vector)),'filled');
+
 				hold on
 				
 				%gather all the indexes where both players selected A's
@@ -2680,6 +2680,7 @@ for iGroup = 1 : length(GroupNameList)
 				%[ITRel_r, ITRel_p, ITRel_r_ci_lower, ITRel_r_ci_upper] = corrcoef(A_InitialTargetReleaseRT(GoodTrialsIdx(JointTrialX_Vector)), B_InitialTargetReleaseRT(GoodTrialsIdx(JointTrialX_Vector)));
 				[TAcq_r_same_choice_A, TAcq_p_same_choice_A] = corrcoef(same_choice_A_preferred_A,same_choice_A_preferred_B);
 				[TAcq_r_same_choice_B, TAcq_p_same_choice_B] = corrcoef(same_choice_B_preferred_A,same_choice_B_preferred_B);
+                
 				[TAcq_r_diff_own_choice, TAcq_p_diff_own_choice] = corrcoef(diff_choice_own_A,diff_choice_own_B);
 				[TAcq_r_diff_other_choice, TAcq_p_diff_other_choice] = corrcoef(diff_choice_other_A,diff_choice_other_B);
 				% add this as title
@@ -2691,48 +2692,7 @@ for iGroup = 1 : length(GroupNameList)
 				title(titleText, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);
 				hold off
 				
-% 				titleText_same_choice_B = {[['TargetAcquisition time correlation same choice B: r(', num2str(df_corr), '): ', num2str(TAcq_r_same_choice_B(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_same_choice_B(2, 1)),]]};
-% 				title(titleText_same_choice_B, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);
-%  				
-% 				titleText_diff_own = {[['TargetAcquisition time correlation different own: r(', num2str(df_corr), '): ', num2str(TAcq_r_diff_own_choice(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_diff_own_choice(2, 1)),]]};
-% 				title(titleText_same_choice_B, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);
-% 				
-% 				titleText_diff_other = {[['TargetAcquisition time correlation different other: r(', num2str(df_corr), '): ', num2str(TAcq_r_diff_other_choice(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_diff_other_choice(2, 1)),]]};
-% 				title(titleText_diff_other, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);
 
-%                    if isempty(same_choice_A_preferred_A & same_choice_A_preferred_B)
-% 					linear_fit_same_choice_B = fitlm(same_choice_B_preferred_A,same_choice_B_preferred_B);
-% 					plot(linear_fit_same_choice_B);
-% 				else
-% 					linear_fit_same_choice_B = fitlm(same_choice_B_preferred_A,same_choice_B_preferred_B);
-% 					linear_fit_same_choice_A= fitlm(same_choice_A_preferred_A,same_choice_A_preferred_B);
-% 					plot(linear_fit_same_choice_B);
-% 					plot(linear_fit_same_choice_A);
-% 				end
-% 				
-% 				if isempty(diff_choice_other_A & diff_choice_other_B)
-% 					linear_fit_diff_own = fitlm(diff_choice_own_A,diff_choice_own_B);
-% 					plot(linear_fit_diff_own);
-% 				else
-% 					linear_fit_diff_own = fitlm(diff_choice_own_A,diff_choice_own_B);
-% 					linear_fit_diff_other = fitlm(diff_choice_other_A,diff_choice_other_B);
-% 					plot(linear_fit_diff_own);
-% 					plot(linear_fit_diff_other);
-% 				
-% 				end
-				
-% 				p=polyfit(same_choice_B_preferred_A,same_choice_B_preferred_B,2);
-% 				y1 = polyval(p,same_choice_B_preferred_A);
-				
-				
-% 				if (calculate_correlation)
-% 					if isempty(same_choice_A_preferred_A | same_choice_A_preferred_B);
-% 						[r_2, p_2]= corr(same_choice_B_preferred_A,same_choice_B_preferred_B);
-% 					else
-% 						[r_1, p_1]= corr(same_choice_A_preferred_A,same_choice_A_preferred_B);
-% 						[r_2, p_2]= corr(same_choice_B_preferred_A,same_choice_B_preferred_B);
-% 					end
-% 				end
 				
 				subplot (1,3,2);
 				A_own_index = (PreferableTargetSelected_A == 1);
@@ -2874,7 +2834,7 @@ for iGroup = 1 : length(GroupNameList)
 					'MarkerFaceColor',[0 0 1]);
 				scatter(diff_choice_A_left_B_right_RT_A ,diff_choice_A_left_B_right_RT_B,10,  'MarkerEdgeColor',[0 0 0],...
 					'MarkerFaceColor',[1 0 1]);
-				scatter(diff_choice_A_right_B_left_RT_A ,diff_choice_A_right_B_left_RT_B,  'MarkerEdgeColor',[0 0 0],...
+				scatter(diff_choice_A_right_B_left_RT_A ,diff_choice_A_right_B_left_RT_B,10,  'MarkerEdgeColor',[0 0 0],...
 					'MarkerFaceColor',[0 1 0]);
 				legend ('A-left-B-left','A-right-B-right','A-left-B-right','A-right-B-left');
 				axis equal ;
@@ -2901,10 +2861,20 @@ for iGroup = 1 : length(GroupNameList)
 				hold off
 				
 				subplot(1,3,2)
-				scatter (same_choice_A_right_B_right_RT_A,same_choice_A_right_B_right_RT_B, 10, 'MarkerEdgeColor',[0 0 0],...
+                A_left_choices = A_TargetAcquisitionRT(intersect(GoodTrialsIdx,A_left_index));
+                B_when_A_left = B_TargetAcquisitionRT (intersect(GoodTrialsIdx,A_left_index));
+                A_right_choices = A_TargetAcquisitionRT  (intersect(GoodTrialsIdx,A_right_index));
+                B_when_A_right = B_TargetAcquisitionRT (intersect(GoodTrialsIdx,A_right_index));
+                
+%                B_choice_when_A_own_trials = B_TargetAcquisitionRT(intersect(GoodTrialsIdx,	A_own_choice_trials_index));
+% 				B_choice_when_A_other_trials = B_TargetAcquisitionRT(intersect(GoodTrialsIdx,A_other_choice_trials_index));
+				
+				scatter ( B_when_A_left,A_left_choices, 10, 'MarkerEdgeColor',[0 0 0],...
 					'MarkerFaceColor',[1 0 0]);
 				hold on
-				legend('A-right-B-right')
+                scatter ( B_when_A_right,A_right_choices, 10, 'MarkerEdgeColor',[0 0 0],...
+					'MarkerFaceColor',[1 0 1]);
+				legend('A-left','A-right')
 				axis equal ;
  				ax=gca;
 % 				%axis square;
@@ -2914,20 +2884,30 @@ for iGroup = 1 : length(GroupNameList)
  				diagnal_origin= [0 1500];
  				diagnal_end = [0 1500];
  				plot(diagnal_origin,diagnal_end,'--');
- 				xlabel('RT_A','FontSize',10,'FontWeight','bold');
- 				ylabel('RT_B','FontSize',10,'FontWeight','bold');
+ 				xlabel('RT_B','FontSize',10,'FontWeight','bold');
+ 				ylabel('RT_A','FontSize',10,'FontWeight','bold');
 				
-				[TAcq_r_side_A_right_B_right, TAcq_p_side_A_right_B_right] = corrcoef( same_choice_A_right_B_right_RT_A,same_choice_A_right_B_right_RT_B);
-				titleText_A_right_B_right = {[['TargetAcquisition time correlation A-right-B-right: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_A_right_B_right(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_side_A_right_B_right(2, 1)),]]}
-				title(titleText_A_right_B_right, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);	
+				[TAcq_r_side_A_left, TAcq_p_side_A_left] = corrcoef(A_left_choices,B_when_A_left);
+                [TAcq_r_side_A_right, TAcq_p_side_A_right] = corrcoef(A_right_choices,B_when_A_right);
+				titleText_A_side = {[['TargetAcquisition time correlation A-left: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_A_left(2, 1), '%.4f'),  ', p <= ', num2str( TAcq_p_side_A_left(2, 1)),]]...
+                    [['TargetAcquisition time correlation A-right: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_A_right(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_side_A_right(2, 1)),]]}
+				title(titleText_A_side, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);	
 				hold off
 				
 				
 				subplot(1,3,3)
-				scatter (diff_choice_A_left_B_right_RT_A,diff_choice_A_left_B_right_RT_B,10, 'MarkerEdgeColor',[0 0 0],...
+                B_left_choices = B_TargetAcquisitionRT(intersect(GoodTrialsIdx,B_left_index));
+                A_when_B_left = A_TargetAcquisitionRT (intersect(GoodTrialsIdx,B_left_index));
+                B_right_choices = B_TargetAcquisitionRT  (intersect(GoodTrialsIdx,B_right_index));
+                A_when_B_right = A_TargetAcquisitionRT (intersect(GoodTrialsIdx,B_right_index));
+                
+				scatter (A_when_B_left,B_left_choices,10, 'MarkerEdgeColor',[0 0 0],...
 					'MarkerFaceColor',[1 0 0]);
 				hold on
-				legend('A-left-B-right');
+                scatter ( A_when_B_right,B_right_choices,10, 'MarkerEdgeColor',[0 0 0],...
+					'MarkerFaceColor',[1 0 1]);
+				
+                legend('B-left','B-right');
 				axis equal ;
  				ax=gca;
 % 				%axis square;
@@ -2940,9 +2920,11 @@ for iGroup = 1 : length(GroupNameList)
  				xlabel('RT_A','FontSize',10,'FontWeight','bold');
  				ylabel('RT_B','FontSize',10,'FontWeight','bold');
 				
-				[TAcq_r_side_A_left_B_right, TAcq_p_side_A_left_B_right] = corrcoef(diff_choice_A_left_B_right_RT_A,diff_choice_A_left_B_right_RT_B);
-				titleText_A_left_B_right = {[['TargetAcquisition time correlation A-left-B-right: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_A_left_B_right(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_side_A_left_B_right(2, 1)),]]}
-				title(titleText_A_left_B_right, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);	
+				[TAcq_r_side_B_left, TAcq_p_side_B_left] = corrcoef(A_when_B_left,B_left_choices);
+                [TAcq_r_side_B_right, TAcq_p_side_B_right] = corrcoef(A_when_B_right,B_right_choices);
+				titleText_B_side = {[['TargetAcquisition time correlation B-left: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_B_left(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_side_B_left(2, 1)),]]...
+                    [['TargetAcquisition time correlation B-right: r(', num2str(df_corr), '): ', num2str(TAcq_r_side_B_right(2, 1), '%.4f'),  ', p <= ', num2str(TAcq_p_side_B_right(2, 1)),]]}
+				title(titleText_B_side, 'FontSize', title_fontsize, 'Interpreter', 'None', 'FontWeight', title_fontweight);	
 				hold off
 				
 % 				subplot(1,3,3)
@@ -3008,7 +2990,7 @@ for iGroup = 1 : length(GroupNameList)
 						linear_fit_diff_other = fitlm(diff_choice_other_A,diff_choice_other_B);
 						plot(linear_fit_diff_own);
 						hold on
-						plot(linear_fit_diff_other,'g');
+						plot(linear_fit_diff_other);
 						hold off
 					end
  				

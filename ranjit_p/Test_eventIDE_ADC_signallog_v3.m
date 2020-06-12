@@ -18,8 +18,9 @@ function [ output_args ] = Test_eventIDE_ADC_signallog_v3( input_args )
 %	60Hz EventIDE graphics mode, OLED reports 60.0Hz
 %	-> photo diode implies 120/60Hz, Oscilloscope measured 60.24Hz
 % -> ??? tight refresh time histograms BUT high latency ~50ms (3-4 frames)
-test_session_id = '20200513T130845.A_AccXYZ.B_TestB.SCP_01.sessiondir';
+%test_session_id = '20200513T130845.A_AccXYZ.B_TestB.SCP_01.sessiondir';
 
+test_session_id = '20200522T143126.A_AccXYZ.B_TestB.SCP_01.sessiondir';
 session_struct = fnLoadDataBySessionDir(test_session_id);
 
 
@@ -53,6 +54,7 @@ uncorr_sample_subset = (1:1:length(uncorr_time_vec));
 %time_offset = 0;
 time_offset = time_vec(1);
 time_vec = time_vec - time_offset;
+%sample_subset_index= time_vec(100000:end,:);
 sample_subset = (1:1:length(time_vec));
 
 %sample_subset(20000:1:200000);
@@ -332,12 +334,12 @@ hold off
 
 sample_offset = 0;
 sample_offset = 1000000;
-sample_offset = 2000000;
-sample_offset = 0;
+sample_offset = 200000;
+%sample_offset = 0;
 
 sample_end = length(time_vec);
 %sample_end = 30000;
-sample_subset = (1+sample_offset:1:sample_end);
+sample_subset = (1+sample_offset:1:sample_end-300000);
 
 %figure('Name', 'RenderTrigger')
 %plot(time_vec(sample_subset), ADC_data.data(sample_subset, ADC_data.cn.Dev1_ai0)); % the photo diode signal
@@ -399,11 +401,17 @@ end
 figure('Name', 'ADC detrend');
 %subplot(3, 1, 1)
 title(chan_names{2});
-my_sample_subset = (1:1:6000);
+my_sample_subset = (1000:1:6000);
 my_sample_subset = sample_subset;
-de_trend_ai2= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
-de_trend_ai3= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
-de_trend_ai4= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
+% de_trend_ai2= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
+% de_trend_ai3= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
+% de_trend_ai4= detrend(ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
+
+
+vector_sum= sqrt((de_trend_ai2).^2+(de_trend_ai3).^2+(de_trend_ai4).^2);
+% median_de_trend_ai2= medfilt1(de_trend_ai2,5);
+% median_de_trend_ai3= medfilt1(de_trend_ai3,5);
+% median_de_trend_ai4= medfilt1(de_trend_ai4,5);
 %plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai2));
 %plot(time_vec(my_sample_subset, ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai0));
 hold on
@@ -412,10 +420,11 @@ hold on
 %plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai3));
 %plot(time_vec(my_sample_subset), ADC_data.data(my_sample_subset, ADC_data.cn.Dev1_ai4));
 
-plot(time_vec(my_sample_subset),de_trend_ai2);
-plot(time_vec(my_sample_subset), de_trend_ai3);
-plot(time_vec(my_sample_subset), de_trend_ai4);
 
+% plot(time_vec(my_sample_subset),de_trend_ai2);
+% plot(time_vec(my_sample_subset), de_trend_ai3);
+% plot(time_vec(my_sample_subset), de_trend_ai4);
+plot(time_vec(my_sample_subset), vector_sum);
 
 
 legend(chan_names(4:end), 'Interpreter', 'none');
@@ -436,54 +445,94 @@ hold off
 xlabel('Samples');
 y_lim = get(gca(), 'YLim');
 
-lpFilt = designfilt('lowpassiir','FilterOrder',2, ...
-         'PassbandFrequency',1e3,'PassbandRipple',0.2, ...
-         'SampleRate',2e3);
 
+
+%lpFilt = designfilt('lowpassiir','FilterOrder',300, ...
+%          'PassbandFrequency',1000,'PassbandRipple',0.2, ...
+%          'SampleRate',2e3);
+
+ hpFilt = designfilt('highpassfir','StopbandFrequency',0.25, ...
+         'PassbandFrequency',0.35,'PassbandRipple',0.5, ...
+         'StopbandAttenuation',65);
+
+%  hpFilt = designfilt('highpassiir','FilterOrder',300, ...
+%          'PassbandFrequency',300,'PassbandRipple',0.2, ...
+%          'SampleRate',2e3);	 
 	 
-lp_filtered_data_ai2= filter(lpFilt,de_trend_ai2);
-lp_filtered_data_ai3=filter(lpFilt,de_trend_ai3);
-lp_filtered_data_ai4=filter(lpFilt,de_trend_ai4); 
+% hpFilt= designfilt('differentiatorfir','FilterOrder',300, ...
+%     'PassbandFrequency',50,'StopbandFrequency',200, ...
+%     'SampleRate',2000);
+
+
+% lp_filtered_data_ai2= filter(hpFilt,de_trend_ai2);
+% lp_filtered_data_ai3=filter(hpFilt,de_trend_ai3);
+% lp_filtered_data_ai4=filter(hpFilt,de_trend_ai4); 
+
+lp_filtered_data_ai4=filter(hpFilt,vector_sum); 
+% lp_filtered_data_ai2_useful=lp_filtered_data_ai2(100000:end,:); 
+% lp_filtered_data_ai3_useful=lp_filtered_data_ai3(100000:end,:); 
+% lp_filtered_data_ai3_useful=lp_filtered_data_ai3(100000:end,:); 
+
+% median_filter_ai2=medfilt1(lp_filtered_data_ai2,5);
+% median_filter_ai3=medfilt1(lp_filtered_data_ai3,5);
+% median_filter_ai4=medfilt1(lp_filtered_data_ai4,5);
+
+median_filter_ai4=medfilt1(vector_sum,5);
+
 
 figure('Name', 'ADC detrend_lpFiltered');
 title(chan_names{2});
 my_sample_subset = (1:1:6000);
 my_sample_subset = sample_subset;
 hold on
-plot(time_vec(my_sample_subset),lp_filtered_data_ai2);
-plot(time_vec(my_sample_subset),lp_filtered_data_ai3);
-plot(time_vec(my_sample_subset), lp_filtered_data_ai4);
+% plot(time_vec(my_sample_subset),median_filter_ai2);
+% plot(time_vec(my_sample_subset),median_filter_ai3);
+% plot(time_vec(my_sample_subset), median_filter_ai4);
+
+plot(time_vec(my_sample_subset),median_filter_ai4 );
 legend(chan_names(4:end), 'Interpreter', 'none');
 hold off
 
-Velocity_ai2= cumsum(lp_filtered_data_ai2);
-Velocity_ai3= cumsum(lp_filtered_data_ai3);
-Velocity_ai4= cumsum(lp_filtered_data_ai4);
+% Velocity_ai2= cumsum(median_filter_ai2);
+% Velocity_ai3= cumsum(median_filter_ai3);
+Velocity_ai4= cumsum(median_filter_ai4);
+% 
+% de_trend_velocity_ai2= detrend(Velocity_ai2,'linear',10);
+% de_trend_velocity_ai3= detrend(Velocity_ai3,'linear',5);
+% de_trend_velocity_ai4= detrend(Velocity_ai4);
 
-% time_integral= time_vec(my_sample_subset);
-% Velocity_ai2= integral (lp_filtered_data_ai2, time_integral(1), time_integral(end));
-% Velocity_ai3= integral (lp_filtered_data_ai3, time_integral(1), time_integral(end));
-% Velocity_ai4= integral (lp_filtered_data_ai4, time_integral(1), time_integral(end));
+% Activity_ai=de_trend_velocity_ai2+de_trend_velocity_ai3;
+% plot(time_vec(my_sample_subset),Activity_ai);
+
+% Detrend_velocity_ai2= detrend(Velocity_ai2);
+% Detrend_velocity_ai3= detrend(Velocity_ai3);
+% Detrend_velocity_ai4= detrend(Velocity_ai4);
+
+%  time_integral= time_vec(my_sample_subset);
+%  Velocity_ai2= trapz(lp_filtered_data_ai2, time_integral(1), time_integral(end));
+%  Velocity_ai3= trapz (lp_filtered_data_ai3, time_integral(1), time_integral(end));
+%  Velocity_ai4= trapz (lp_filtered_data_ai4, time_integral(1), time_integral(end));
 figure('Name','ADC Velocity');
 title(chan_names{2});
 hold on
-plot(time_vec(my_sample_subset),Velocity_ai2);
-plot(time_vec(my_sample_subset),Velocity_ai3);
-plot(time_vec(my_sample_subset), Velocity_ai4);
-legend('Velocity_x', 'velocity_y','velocity_z');
+% plot(time_vec(my_sample_subset),de_trend_velocity_ai2);
+% plot(time_vec(my_sample_subset),de_trend_velocity_ai3);
+plot(time_vec(my_sample_subset),Velocity_ai4);
+% plot(time_vec(my_sample_subset),Activity_ai);
+legend('Velocity_x', 'velocity_y','velocity_z','combined xy');
 
 
 hold off
 
-position_ai2=cumsum(Velocity_ai2);
-position_ai3=cumsum(Velocity_ai3);
+% position_ai2=cumsum(Velocity_ai2);
+% position_ai3=cumsum(Velocity_ai3);
 position_ai4=cumsum(Velocity_ai4);
 
 figure('Name','ADC Position');
 title(chan_names{2});
 hold on
-plot(time_vec(my_sample_subset),position_ai2);
-plot(time_vec(my_sample_subset),position_ai3);
+% plot(time_vec(my_sample_subset),position_ai2);
+% plot(time_vec(my_sample_subset),position_ai3);
 plot(time_vec(my_sample_subset),position_ai4);
 legend('position_x', 'position_y','position_z');
 hold off

@@ -91,9 +91,9 @@ end
 if ~exist('gaze_tracker_logfile_FQN', 'var')
 	%fileID='20190729T154225.A_Elmo.B_None.SCP_01.';
 	if (ispc)
-		saving_dir='C:\taskcontroller\SCP_DATA\ANALYSES\GazeAnalyses';
-		data_root_str = 'C:';
-		data_dir = fullfile(data_root_str, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');
+		saving_dir='Y:\SCP_DATA\ANALYSES\GazeAnalyses';
+		data_root_str = 'Y:';
+		data_dir = fullfile(data_root_str, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');
 		
 	else
 		data_root_str = '/';
@@ -149,7 +149,7 @@ switch(tracker_type)
 		gaze_col_name_list.gaze_typeID_col_name = '';
 		out_of_bounds_marker_value = -32768;
 	otherwise
-		error(['tracker_type: ', tracker_type, ' not yet supported.']);
+%		error(['tracker_type: ', tracker_type, ' not yet supported.']);
 end
 
 sessionID = fn_get_sessionID_from_SCP_path(gaze_tracker_logfile_FQN, '.sessiondir');

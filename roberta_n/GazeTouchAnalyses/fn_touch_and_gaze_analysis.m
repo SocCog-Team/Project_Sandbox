@@ -10,7 +10,7 @@ exclude_saccade_samples = 1;
 use_velocity_fixation_detector = 1;
 
 if ~exist('fileID', 'var') || isempty(fileID)
-	fileID = '20190320T095244.A_Elmo.B_JK.SCP_01';
+	fileID = '20200522T154606.A_20200522ID006S1.B_None.SCP_01.0016_DAGDFGR.v015.20.2020515.01.SCP_01.pupillabs.eve';
 end
 
 if ~exist('gazereg_name', 'var') || isempty(gazereg_name)

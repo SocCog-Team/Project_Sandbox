@@ -93,7 +93,8 @@ if ~exist('gaze_tracker_logfile_FQN', 'var')
 	if (ispc)
 		saving_dir='Y:\SCP_DATA\ANALYSES\GazeAnalyses';
 		data_root_str = 'Y:';
-		data_dir = fullfile(data_root_str, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');		
+		data_dir = fullfile(data_root_str, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');
+		
 	else
 		data_root_str = '/';
 		saving_dir = fullfile(data_root_str, 'Users', 'rnocerino', 'DPZ', 'taskcontroller', 'SCP_DATA', 'ANALYSES', 'GazeAnalyses_RN');

@@ -1,4 +1,4 @@
-function [ registration_struct ] = fn_gaze_recalibrator_sm(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree, lwm_N)
+function [ registration_struct ] = fn_gaze_recalibrator_rp(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, saccade_allowance_time_ms, acceptable_radius_pix, transformationType, polynomial_degree, lwm_N)
 %FN_GAZE_RECALIBRATOR Analyse simple dot following gaze mapping data to
 %generate better registration matrices to convert "raw" gaze data into
 %eventIDE pixel coordinates
@@ -89,11 +89,12 @@ end
 
 % TODO remove this
 if ~exist('gaze_tracker_logfile_FQN', 'var')
-	%fileID='20190729T154225.A_Elmo.B_None.SCP_01.';
+	fileID='20200522T154606.A_20200522ID006S1.B_None.SCP_01.0016_DAGDFGR.v015.20.2020515.01.SCP_01.pupillabs.eve';
 	if (ispc)
 		saving_dir='Y:\SCP_DATA\ANALYSES\GazeAnalyses';
 		data_root_str = 'Y:';
-		data_dir = fullfile(data_root_str, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');		
+		data_dir = fullfile(data_root_str, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2020', '200522', '20200522T154827.A_20200522ID006S1.B_None.SCP_01.sessiondir');
+		
 	else
 		data_root_str = '/';
 		saving_dir = fullfile(data_root_str, 'Users', 'rnocerino', 'DPZ', 'taskcontroller', 'SCP_DATA', 'ANALYSES', 'GazeAnalyses_RN');
@@ -104,14 +105,14 @@ if ~exist('gaze_tracker_logfile_FQN', 'var')
 		
 		% local
 		data_base_dir = fullfile(data_root_str, 'Users', 'smoeller', 'DPZ');
-		data_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190729', '20190729T154225.A_Elmo.B_None.SCP_01.sessiondir');
+		data_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2020', '200522', '20200522T154827.A_20200522ID006S1.B_None.SCP_01.sessiondir');
 		
 		
 	end
 	
 	if ~exist('EyeLinkfilenameA', 'var')
-		gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20190729T154225.A_Elmo.B_None.SCP_01.TID_EyeLinkProxyTrackerA.trackerlog.txt.gz');
-		gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20190729T154225.A_Elmo.B_None.SCP_01.TID_EyeLinkProxyTrackerA.trackerlog');
+		gaze_tracker_logfile_FQN = fullfile(data_dir, '20200522T154827.A_20200522ID006S1.B_None.SCP_01.TID_PupilLabsTrackerA.trackerlog.txt.gz');
+		gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20200522T154827.A_20200522ID006S1.B_None.SCP_01.TID_PupilLabsTrackerA.trackerlog');
 	end
 	
 end
@@ -132,7 +133,7 @@ if ~exist('tracker_type', 'var') || isempty(tracker_type)
 	end
 	if ~isempty(regexpi(gaze_tracker_logfile_name, 'pupillabs'))
 		tracker_type = 'pupillabs';
-		error([mfilename, ': Tracker type pupillabs not implemented yet.']);
+		%error([mfilename, ': Tracker type pupillabs not implemented yet.']);
 	end
 end
 
@@ -148,7 +149,13 @@ switch(tracker_type)
 		gaze_col_name_list.gaze_typeID_col_name = '';
 		out_of_bounds_marker_value = -32768;
 	otherwise
-		error(['tracker_type: ', tracker_type, ' not yet supported.']);
+		%error(['tracker_type: ', tracker_type, ' not yet supported.']);
+		gaze_col_name_list.stem = {'Right_Eye_Raw', 'Left_Eye_Raw'};
+		gaze_col_name_list.X = {'Right_Eye_Raw_X', 'Left_Eye_Raw_X'};
+		gaze_col_name_list.Y = {'Right_Eye_Raw_Y', 'Left_Eye_Raw_Y'};
+		% if single columns contain multiple data types (like for pupillabs data)
+		gaze_col_name_list.gaze_typeID_col_name = '';
+		out_of_bounds_marker_value = -32768;
 end
 
 sessionID = fn_get_sessionID_from_SCP_path(gaze_tracker_logfile_FQN, '.sessiondir');
@@ -188,8 +195,8 @@ end
 
 
 % extract the columns with the eventIDE coordinates for fixation target and the gaze data
-fix_target_x_list = (data_struct.data(:, ds_colnames.FixationPointX));
-fix_target_y_list = (data_struct.data(:, ds_colnames.FixationPointY));
+fix_target_x_list = (data_struct.data(:, ds_colnames.Raw_X));
+fix_target_y_list = (data_struct.data(:, ds_colnames.Raw_Y));
 
 % extract the columns with the eventIDE coordinates for the gaze data
 % these are not guaranteed to employ the final/best eventIDE linear
@@ -252,7 +259,7 @@ tmp_lidx = fixation_points_idx_diff <= 1;
 % these idx have >= 2 samples of below threshold velocity -> proto
 % fixations instead of saccades.
 fixation_samples_idx = low_velocity_samples_idx(tmp_lidx);
-fixation_target_visible_sample_idx = find(data_struct.data(:, ds_colnames.FixationPointVisible) >= 1); %points that are visible
+fixation_target_visible_sample_idx = find(data_struct.data(:, ds_colnames.Fiducial_Surface_idx) >= 1); %points that are visible
 
 
 % extract the FixationTarget information by sample
@@ -261,12 +268,13 @@ fixation_target.by_sample.cn = local_get_column_name_indices(fixation_target.by_
 FTBS_cn = fixation_target.by_sample.cn;
 
 fixation_target.by_sample.table = zeros([size(data_struct.data, 1), 3]);
-fixation_target.by_sample.table(:, 1:2) = [data_struct.data(:, ds_colnames.FixationPointX),(data_struct.data(:, ds_colnames.FixationPointY))];
+fixation_target.by_sample.table(:, 1:2) = [fixation_target.by_sample.table(:,FixationPointX),(fixation_target.by_sample.table(:,FixationPointY))];
+%fixation_target.by_sample.table(:, 1:2) = [data_struct.data(:, ds_colnames.Circle3D_Normal_X),(data_struct.data(:, ds_colnames.Circle3D_Normal_X))];
 fixation_target.by_sample.table(:, FTBS_cn.FixationPointID) = -1; % faster than NaN ad also not a valid index
 fixation_target.by_sample.table(:, FTBS_cn.timestamp) = timestamp_list;
 
 % assign an ID to each fixation target position
-% now find the unique displayed fixation target positions
+% now find the unique displayed fixation target positions 
 existing_fixation_target_x_y_coordinate_list = unique(fixation_target.by_sample.table(:, 1:2), 'rows');
 
 zero_offset = 0;	% handle absence of the no fixation targt displayed condition gracefully

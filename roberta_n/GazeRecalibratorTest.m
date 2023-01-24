@@ -9,8 +9,6 @@ function [ output_args ] = GazeRecalibratorTest( input_args )
 	data_base_dir = fullfile(data_root_str, 'Volumes', 'social_neuroscience_data');
 	data_dir = fullfile(data_base_dir, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2020', '200605', '20200605T123825.A_20200605ID014S1.B_None.SCP_01.sessiondir');
 	
-
-
 if ~exist('EyeLinkfilenameA', 'var')
 	gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20190729T154225.A_Elmo.B_None.SCP_01.TID_EyeLinkProxyTrackerA.trackerlog.txt.gz');
 	gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20190729T154225.A_Elmo.B_None.SCP_01.TID_EyeLinkProxyTrackerA.trackerlog');
@@ -52,8 +50,13 @@ tracker_type = 'eyelink';
 
 %%Pupillabs test
 tracker_type = 'pupillabs';
+<<<<<<< HEAD
 data_dir = fullfile(data_base_dir, 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2020', '200605', '20200605T123825.A_20200605ID014S1.B_None.SCP_01.sessiondir');
 gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20200605T123825.A_20200605ID014S1.B_None.SCP_01.TID_PupilLabsTrackerA.trackerlog');
+=======
+data_dir = fullfile(data_base_dir, 'taskcontroller', 'SCP_DATA', 'SCP-CTRL-01', 'SESSIONLOGS', '2019', '190419', '20190419T161006.A_190419ID111S1.B_None.SCP_01.sessiondir');
+gaze_tracker_logfile_FQN = fullfile(data_dir, 'trackerlogfiles', '20190419T161006.A_190419ID111S1.B_None.SCP_01.TID_PupilLabsTrackerA.trackerlog');
+>>>>>>> 662a8b8495d12b71ec43dacab2794df217299304
 fn_gaze_recalibrator(gaze_tracker_logfile_FQN, tracker_type, velocity_threshold_pixels_per_sample, acceptable_radius_pix, transformationType);
 
 end

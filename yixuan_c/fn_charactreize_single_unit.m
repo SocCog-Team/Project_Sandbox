@@ -1,4 +1,4 @@
-function [] = fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, output_directory)
+function [] = fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, output_directory, session_ID)
 %FN_CHARACTREIZE_SINGLE_UNIT Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -14,6 +14,7 @@ rewarded_trial_idx = reference_alignment_data.raster_site_info.TrialSets.ByOutco
 
 % time windows, range relative to alignment
 window.range = [-500 500];
+
 
 % find valid trials in the set
 
@@ -41,8 +42,35 @@ for i_alignment = 1 : length(alignment_event_list)
 	
 	[ aggregate_struct, report_string ] = fn_statistic_test_and_report('Left', firing_rate_Hz(intersect(goodtrial_idx, Left_idx)), 'Right', firing_rate_Hz(intersect(goodtrial_idx, Right_idx)), 'ttest2', [])
 	
-	anovan
-
+	%anovan
+	
+	fh = figure('Name', [cur_alignment, ': ', factor_name]);
+	cur_x_vec = cur_data_struct.raster_site_info.event_aligned_bincenter_ts_list;
+	unique_factors = unique(factor_list(goodtrial_idx));
+	factor_color = lines(length(unique_factors));
+	legend_list = {};
+	hold on
+	for i_factor_instance = 1 : length(unique_factors)
+		cur_factor_instance = unique_factors{i_factor_instance};
+		legend_list(end+1) = {cur_factor_instance};
+		cur_factor_instance_trial_idx =  find(strcmp(factor_list, cur_factor_instance));
+		cur_trial_idx = intersect(cur_factor_instance_trial_idx, goodtrial_idx);
+		cur_data = mean(cur_data_struct.raster_data(cur_trial_idx, :), 1, 'omitnan');
+		plot(cur_x_vec, cur_data, 'Color', factor_color(i_factor_instance, :));
+		%[N, edges, bin] = histcounts(cur_data_struct.raster_data(cur_trial_idx, :), size(cur_data_struct.raster_data,2));
+	end
+	y_limits = get(gca(), 'YLim');
+	plot([0 0], y_limits, 'Color', [0 0 0]);
+	
+	hold off
+	legend(legend_list);
+	title({['Alignment: ', cur_alignment]}, 'Interpreter', 'None');
+	subtitle({['Factor: ', factor_name]}, 'Interpreter', 'None');
+	xlabel('Time relative to alignment event [ms]');
+	ylabel('Firing rate [???]');
+	
+	write_out_figure(fh, fullfile(output_directory, ['UnitPlot.', session_ID, '.', set.value, '.', cur_alignment, '.', factor_name, '.pdf']));
+	
 end	
 % aggregation function: averaging
 

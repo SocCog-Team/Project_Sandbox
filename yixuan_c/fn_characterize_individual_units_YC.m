@@ -75,7 +75,7 @@ for i_unit = 1 : n_units
 		unit_raster_by_alignment_event.(cur_alignment_event).unique_label_instances_struct = unique_label_instances_struct;
 	end % i_alignment
 	
-	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, output_directory);
+	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, output_directory, session_ID);
 	
 end %i_unit
 

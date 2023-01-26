@@ -1,4 +1,4 @@
-function [] = fn_characterize_individual_units_YC(sesssession_FQNion_ID)
+function [] = fn_characterize_individual_units_YC(session_FQNion_ID)
 %FN_CHARACTERIZE_INDIVIDUAL_UNITS_YC Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -27,7 +27,7 @@ end
 % PETHdata path
 PETHdata_base_dir = fullfile(session_FQN, 'TDT', 'PETHdata');
 raster_dir_relative_to_alignment = fullfile('raster_format', 'ALL_LABELS');
-output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis');
+output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'LR_analysis');
 if ~isempty(output_directory)
 	mkdir(output_directory);
 end
@@ -58,6 +58,9 @@ n_units = length(proto_unit_list);
 % 1. loop over units
 for i_unit = 1 : n_units
 	proto_unit_name = proto_unit_list(i_unit).name;
+	unit_name = regexp(proto_unit_name, '\.', 'split'); % 	get channel and cluster names
+	unit_name_channel = unit_name{5};
+	unit_name_cluster = unit_name{6};
 	
 	unique_label_instances_name = regexprep(proto_unit_name, '.raster.mat', '.unique_label_instances.mat');
 	% load unique_label_instances_struct
@@ -75,7 +78,7 @@ for i_unit = 1 : n_units
 		unit_raster_by_alignment_event.(cur_alignment_event).unique_label_instances_struct = unique_label_instances_struct;
 	end % i_alignment
 	
-	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, output_directory, session_ID);
+	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list,  unit_name_cluster, unit_name_channel, output_directory, session_ID);
 	
 end %i_unit
 

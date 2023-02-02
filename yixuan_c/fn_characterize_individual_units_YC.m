@@ -24,10 +24,11 @@ end
 [session_dir, session_ID, session_ext] = fileparts(session_FQN);
 
 
+
 % PETHdata path
 PETHdata_base_dir = fullfile(session_FQN, 'TDT', 'PETHdata');
 raster_dir_relative_to_alignment = fullfile('raster_format', 'ALL_LABELS');
-output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'LR_analysis');
+output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'pos_timing_analysis');
 if ~isempty(output_directory)
 	mkdir(output_directory);
 end
@@ -41,9 +42,9 @@ for i_dir = 1 : length(PETHdata_dir_struct)
 				continue
 			otherwise
 				existing_alignment_event_list(end+1) = {PETHdata_dir_struct(i_dir).name};
-		end	
+		end
 	end
-end	
+end
 
 % list of alignments
 alignment_event_list = {'A_InitialFixationReleaseTime_ms', 'B_InitialFixationReleaseTime_ms'};
@@ -55,34 +56,41 @@ n_alignment_events = length(alignment_event_list);
 proto_unit_list = dir(fullfile(PETHdata_base_dir, initial_alignment_event, raster_dir_relative_to_alignment, [session_ID, '*', initial_alignment_event, '*', '.raster.mat']));
 n_units = length(proto_unit_list);
 
-% 1. loop over units
-for i_unit = 1 : n_units
-	proto_unit_name = proto_unit_list(i_unit).name;
-	unit_name = regexp(proto_unit_name, '\.', 'split'); % 	get channel and cluster names
-	unit_name_channel = unit_name{5};
-	unit_name_cluster = unit_name{6};
-	
-	unique_label_instances_name = regexprep(proto_unit_name, '.raster.mat', '.unique_label_instances.mat');
-	% load unique_label_instances_struct
-	load(fullfile(PETHdata_base_dir, initial_alignment_event, 'raster_format', unique_label_instances_name));
-	
-	
-	% 2. loop over alignment events
-	for i_alignment = 1 : length(alignment_event_list)
-		cur_alignment_event = alignment_event_list{i_alignment};
-		cur_unit_name = regexprep(proto_unit_name, initial_alignment_event, cur_alignment_event);
-		cur_unit_dir = fullfile(PETHdata_base_dir, cur_alignment_event, raster_dir_relative_to_alignment);
-		disp(['Loading unit: ', cur_unit_name]);
-% 		cur_unit_raster_data = load(fullfile(cur_unit_dir, cur_unit_name));
-		unit_raster_by_alignment_event.(cur_alignment_event) = load(fullfile(cur_unit_dir, cur_unit_name));
-		unit_raster_by_alignment_event.(cur_alignment_event).unique_label_instances_struct = unique_label_instances_struct;
-	end % i_alignment
-	
-	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list,  unit_name_cluster, unit_name_channel, output_directory, session_ID);
-	
-end %i_unit
+% % 1. loop over units
+% for i_unit = 1 : n_units
+% 	proto_unit_name = proto_unit_list(i_unit).name;
+% 	unit_name = regexp(proto_unit_name, '\.', 'split'); % 	get channel and cluster names
+% 
+% 	unique_label_instances_name = regexprep(proto_unit_name, '.raster.mat', '.unique_label_instances.mat');
+% 	% load unique_label_instances_struct
+% 	load(fullfile(PETHdata_base_dir, initial_alignment_event, 'raster_format', unique_label_instances_name));
+% 
+% 
+% 	% 2. loop over alignment events
+% 	for i_alignment = 1 : length(alignment_event_list)
+% 		cur_alignment_event = alignment_event_list{i_alignment};
+% 		cur_unit_name = regexprep(proto_unit_name, initial_alignment_event, cur_alignment_event);
+% 		cur_unit_dir = fullfile(PETHdata_base_dir, cur_alignment_event, raster_dir_relative_to_alignment);
+% 		disp(['Loading unit: ', cur_unit_name]);
+% % 		cur_unit_raster_data = load(fullfile(cur_unit_dir, cur_unit_name));
+% 		unit_raster_by_alignment_event.(cur_alignment_event) = load(fullfile(cur_unit_dir, cur_unit_name));
+% 		unit_raster_by_alignment_event.(cur_alignment_event).unique_label_instances_struct = unique_label_instances_struct;
+% 	end % i_alignment
+% 
+% 	fn_charactreize_single_unit_ANOVAN(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
+% 	fn_charactreize_single_unit_ANOVA(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
+
+% 	Solo LR analysis: draw the graph of firing rate against tiem for each cluster
+
+% 	fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list,  unit_name, output_directory, session_ID);
 
 
+% end %i_unit
+
+
+% 	draw the population plot of mean frequency of left against right: to
+% 	run this comment the 60-88 line for easier computation 
+	fn_characterize_individual_units_population(raster_dir_relative_to_alignment, initial_alignment_event, PETHdata_base_dir, proto_unit_list, n_units, alignment_event_list, output_directory, session_ID)
 
 
 % extract windows

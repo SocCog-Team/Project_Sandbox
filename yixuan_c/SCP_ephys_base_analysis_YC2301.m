@@ -1,4 +1,4 @@
-function [] = SCP_ephys_base_analysis_YC23(session_ID, export_PETH_only)
+function [] = SCP_ephys_base_analysis_YC2301(session_ID, export_PETH_only)
 %ELMO_FB128TDT_TEST Summary of this function goes here
 %   Detailed explanation goes here
 % TODO:
@@ -587,6 +587,27 @@ AB_InitialTargetReleaseRT_diff(A_InitialTargetReleaseRT == 0) = report_struct.da
 AB_InitialTargetReleaseRT_diff(B_InitialTargetReleaseRT == 0) = A_InitialTargetReleaseRT(B_InitialTargetReleaseRT == 0) - report_struct.data(B_InitialTargetReleaseRT == 0, report_struct.cn.B_GoSignalTime_ms);
 AB_InitialTargetReleaseRT_diff_struct = fn_create_quantized_saturated_value_and_label_lists( AB_InitialTargetReleaseRT_diff, timing_split.quantum_ms, timing_split.quant_method, timing_split.saturation_min_ms, timing_split.saturation_max_ms, 'ABirt', GoodTrialsIdx );
 
+
+% trials in which an agent's actions are at leat 500ms away from the
+% other's go signal
+AB_equal_go_idx = find(AB_GoSignalTime_diff == 0);
+A_InitialTargetReleaseRT_minus_B_GO_diff = A_InitialTargetReleaseRT - report_struct.data(:, report_struct.cn.B_GoSignalTime_ms);
+B_InitialTargetReleaseRT_minus_A_GO_diff = B_InitialTargetReleaseRT - report_struct.data(:, report_struct.cn.A_GoSignalTime_ms);
+A_IFTRelease_minus_B_GO_RT_diff_struct = fn_create_quantized_saturated_value_and_label_lists( A_InitialTargetReleaseRT_minus_B_GO_diff, 1000, timing_split.quant_method, -500, 500, 'Aiftr_Bgo', GoodTrialsIdx );
+B_IFTRelease_minus_A_GO_RT_diff_struct = fn_create_quantized_saturated_value_and_label_lists( B_InitialTargetReleaseRT_minus_A_GO_diff, 1000, timing_split.quant_method, -500, 500, 'Biftr_Ago', GoodTrialsIdx );
+
+A_IFTrel_minus_Bgo_list = A_IFTRelease_minus_B_GO_RT_diff_struct.symbolic_sat_labeled_values;
+A_IFTrel_minus_Bgo_list(:) = {'NONE'};
+A_IFTrel_minus_Bgo_list(A_IFTRelease_minus_B_GO_RT_diff_struct.quantized_data == -1000) = {'A_faster_Bgo'};
+A_IFTrel_minus_Bgo_list(A_IFTRelease_minus_B_GO_RT_diff_struct.quantized_data == 1000) = {'A_slower_Bgo'};
+A_IFTrel_minus_Bgo_list(AB_equal_go_idx) = {'ABgo'};
+
+B_IFTrel_minus_Ago_list = B_IFTRelease_minus_A_GO_RT_diff_struct.symbolic_sat_labeled_values;
+B_IFTrel_minus_Ago_list(:) = {'NONE'};
+B_IFTrel_minus_Ago_list(B_IFTRelease_minus_A_GO_RT_diff_struct.quantized_data == -1000) = {'B_faster_Ago'};
+B_IFTrel_minus_Ago_list(B_IFTRelease_minus_A_GO_RT_diff_struct.quantized_data == 1000) = {'B_slower_Ago'};
+B_IFTrel_minus_Ago_list(AB_equal_go_idx) = {'ABgo'};
+
 % TargetAcquisitionRT
 A_TargetAcquisitionRT = report_struct.data(:, report_struct.cn.A_TargetTouchTime_ms); % - report_struct.data(:, report_struct.cn.A_GoSignalTime_ms);
 B_TargetAcquisitionRT = report_struct.data(:, report_struct.cn.B_TargetTouchTime_ms); % - report_struct.data(:, report_struct.cn.B_GoSignalTime_ms);
@@ -1042,6 +1063,13 @@ crt_sequence_list = cell(size(tmp_crt_sequence_list));
 crt_sequence_list(:) = {'None'};
 crt_sequence_list(ismember(tmp_crt_sequence_list, {['qsABcrt_ge+', num2str(timing_split.saturation_max_ms)], ['qsABcrt_ge-', num2str(abs(timing_split.saturation_max_ms))]})) = {'BcatA'};
 crt_sequence_list(ismember(tmp_crt_sequence_list, {['qsABcrt_le-', num2str(abs(timing_split.saturation_min_ms))], ['qsABcrt_le+', num2str(timing_split.saturation_min_ms)]})) = {'AcatB'};
+
+% exclude trials where IFT release and othre's Go signal are in the range of
+% ]0, 500[ milliseconds
+list_struct.A_IFTrel_minus_Bgo_list = A_IFTrel_minus_Bgo_list;
+list_struct.B_IFTrel_minus_Ago_list = B_IFTrel_minus_Ago_list;
+
+
 
 % % get the share of own choices
 all_ones =  ones([size(TrialSets.All, 1), 1]);

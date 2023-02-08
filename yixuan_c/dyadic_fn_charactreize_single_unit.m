@@ -1,4 +1,4 @@
-function [] = fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID)
+function [] = dyadic_fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID)
 %FN_CHARACTREIZE_SINGLE_UNIT Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -14,7 +14,7 @@ end
 % define parameters
 % data sets (e.g. Solo vresus Dyadic)
 set.type = 'ByTrialSubType';	
-set.value ='SoloA';
+set.value ='Dyadic';
 % time windows, range relative to alignment
 window.range = [-500 500];
 
@@ -40,18 +40,48 @@ for i_alignment = 1 : length(alignment_event_list)
 	Left_idx = find(strcmp(factor_list, 'Al'));
 	Right_idx = find(strcmp(factor_list, 'Ar'));
 
-	goodtrial_idx = intersect(intersect(rewarded_trial_idx, existing_factor_idx),  trials_in_set_idx);
+	DiffGo_factor_name = {'A_IFTrel_minus_Bgo_list','B_IFTrel_minus_Ago_list'};
+	if i_alignment == 1
+		self_DiffGo_factor_name = DiffGo_factor_name{1};
+		DiffGo_trial_unique_instances = reference_alignment_data.unique_label_instances_struct.(self_DiffGo_factor_name);
+		DiffGo_trial_unique_instances = ['NONE'; DiffGo_trial_unique_instances];
+		DiffGo_idx = reference_alignment_data.raster_labels.(self_DiffGo_factor_name) + 1;
+		DiffGo_list = DiffGo_trial_unique_instances(DiffGo_idx);
+		existing_factor_idx = find(~strcmp(DiffGo_list, 'NONE'));
+		long_DiffGo_idx =  find(~strcmp(DiffGo_list, 'ABgo'));
+		self_goodtrial_idx = intersect(intersect(intersect(rewarded_trial_idx, existing_factor_idx),  trials_in_set_idx), long_DiffGo_idx);
+		cur_alignment = alignment_event_list{i_alignment};
+		cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
+		adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
+		self_firing_rate_Hz = sum(cur_data_struct.raster_data(self_goodtrial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
+% 		self_sd = ((std(firing_rate_Hz(intersect(self_goodtrial_idx, Left_idx)))^3 + std(firing_rate_Hz(intersect(goodtrial_idx, Right_idx)))^3)/2)^0.5;
+% 		self_effect_size = abs(mean(Left_firing_rate)-mean(Right_firing_rate))/sd;
+	else
+		partner_DiffGo_factor_name = DiffGo_factor_name{2};
+		DiffGo_trial_unique_instances = reference_alignment_data.unique_label_instances_struct.(partner_DiffGo_factor_name);
+		DiffGo_idx = reference_alignment_data.raster_labels.(partner_DiffGo_factor_name) + 1;
+		DiffGo_list = DiffGo_trial_unique_instances(DiffGo_idx);
+		existing_factor_idx = find(~strcmp(DiffGo_list, 'NONE'));
+		long_DiffGo_idx =  find(~strcmp(DiffGo_list, 'ABgo'));
+		partner_goodtrial_idx = intersect(intersect(intersect(rewarded_trial_idx, existing_factor_idx),  trials_in_set_idx), long_DiffGo_idx);
+		cur_alignment = alignment_event_list{i_alignment};
+		cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
+		adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
+		partner_firing_rate_Hz = sum(cur_data_struct.raster_data(partner_goodtrial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
+% 	partner_sd = ((std(firing_rate_Hz(intersect(goodtrial_idx, Left_idx)))^3 + std(firing_rate_Hz(intersect(goodtrial_idx, Right_idx)))^3)/2)^0.5;
+% 	partner_effect_size = abs(mean(Left_firing_rate)-mean(Right_firing_rate))/sd;
+	end
+
+	
+	Left_idx = find(strcmp(factor_list, 'Al'));
+	Right_idx = find(strcmp(factor_list, 'Ar'));
 
 
-	cur_alignment = alignment_event_list{i_alignment};
-	cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
-	adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
-	firing_rate_Hz = sum(cur_data_struct.raster_data(:, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-	sd = ((std(firing_rate_Hz(intersect(goodtrial_idx, Left_idx)))^3 + std(firing_rate_Hz(intersect(goodtrial_idx, Right_idx)))^3)/2)^0.5;
+	
 	Left_firing_rate = sum(cur_data_struct.raster_data(intersect(goodtrial_idx, Left_idx), adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
 	Right_firing_rate = sum(cur_data_struct.raster_data(intersect(goodtrial_idx, Right_idx), adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-	effect_size = abs(mean(Left_firing_rate)-mean(Right_firing_rate))/sd;
-	[ aggregate_struct, report_string ] = fn_statistic_test_and_report('Left', firing_rate_Hz(intersect(goodtrial_idx, Left_idx)), 'Right', firing_rate_Hz(intersect(goodtrial_idx, Right_idx)), 'ttest2', []);
+	
+% 	[ aggregate_struct, report_string ] = fn_statistic_test_and_report('Left', firing_rate_Hz(intersect(goodtrial_idx, Left_idx)), 'Right', firing_rate_Hz(intersect(goodtrial_idx, Right_idx)), 'ttest2', []);
 	
 	% plot the graph and calculat the effect size
 	

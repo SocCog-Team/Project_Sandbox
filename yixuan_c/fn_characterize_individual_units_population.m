@@ -46,6 +46,13 @@ for i_alignment = 1 : length(alignment_event_list)
 		
 		trials_in_set_idx = reference_alignment_data.raster_site_info.TrialSets.(set.type).(set.value);
 		rewarded_trial_idx = reference_alignment_data.raster_site_info.TrialSets.ByOutcome.REWARD;
+		DiffGo_factor_name = {'A_IFTrel_minus_Bgo_list','B_IFTrel_minus_Ago_list'};
+		cur_DiffGo_factor_name = DiffGo_factor_name{i_alignment};
+		DiffGo_trial_unique_instances = reference_alignment_data.unique_label_instances_struct.(cur_DiffGo_factor_name);
+		DiffGo_trial_unique_instances = ['NONE'; DiffGo_trial_unique_instances];
+		DiffGo_idx = reference_alignment_data.raster_labels.(cur_DiffGo_factor_name) + 1;
+		DiffGo_list = DiffGo_trial_unique_instances(DiffGo_idx);
+
 		% find valid trials in the set
 		% which measure to explain with the analysis, here from decoding label
 		% lists
@@ -61,15 +68,18 @@ for i_alignment = 1 : length(alignment_event_list)
 		two_factor_list = two_factor_uniqe_instances(two_factor_idx);
 		combined_factor_list = append(factor_list, two_factor_list);
 		
-		existing_factor_idx = find(~strcmp(factor_list, 'NONE'));
-		goodtrial_idx = intersect(intersect(rewarded_trial_idx, existing_factor_idx),  trials_in_set_idx);
+		existing_factor_idx = find(~strcmp(DiffGo_list, 'NONE'));
+		long_DiffGo_idx =  find(~strcmp(DiffGo_list, 'ABgo'));
+		goodtrial_idx = intersect(intersect(intersect(rewarded_trial_idx, existing_factor_idx),  trials_in_set_idx), long_DiffGo_idx);
+		Left_idx = find(strcmp(factor_list, 'Al'));
+		Right_idx = find(strcmp(factor_list, 'Ar'));
 		
 		
 		cur_alignment = alignment_event_list{i_alignment};
 		cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
 		adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
 		
-% 		for ANOVAN
+		% 		% 		for ANOVAN
 		firing_rate_Hz = sum(cur_data_struct.raster_data(goodtrial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
 		[p, tbl, stats, terms] = anovan(firing_rate_Hz, {factor_list(goodtrial_idx),two_factor_list(goodtrial_idx)},'model',2,'varnames',{'LR','DiffGo'}, 'display','off');
 		cur_eta_squared = [];
@@ -79,21 +89,22 @@ for i_alignment = 1 : length(alignment_event_list)
 		cur_eta_squared =cur_eta_squared';
 		eta_squared(:, end+1)=cur_eta_squared;
 		
-% 		% 		for ANOVA
-% 		firing_rate_Hz = sum(cur_data_struct.raster_data((goodtrial_idx), adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-% 		[p, tbl, stats] = anova1(firing_rate_Hz, factor_list(goodtrial_idx),'off');
-% 		eta_squared(end+1) = cell2mat(tbl(2,2))/cell2mat(tbl(4,2));
-
-		%%		for ttest
+		% 		for ANOVA
+		% 		firing_rate_Hz = sum(cur_data_struct.raster_data((goodtrial_idx), adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
+		% 		[p, tbl, stats] = anova1(firing_rate_Hz, factor_list(goodtrial_idx),'off');
+		% 		eta_squared(end+1) = cell2mat(tbl(2,2))/cell2mat(tbl(4,2));
+		%
+		% 		%		for ttest
+		% 		firing_rate_Hz = sum(cur_data_struct.raster_data(:, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
 		% 		[ aggregate_struct, report_string ] = fn_statistic_test_and_report('Left', firing_rate_Hz(intersect(goodtrial_idx, Left_idx)), 'Right', firing_rate_Hz(intersect(goodtrial_idx, Right_idx)), 'ttest2', []);
 		% 		Left_mean_firing_rate(end+1) = [aggregate_struct.Left_mean];
-		% 		Right_mean_firing_rate(end+1) = [.Right_mean];
+		% 		Right_mean_firing_rate(end+1) = [aggregate_struct.Right_mean];
 		% 		if aggregate_struct.p<0.05
 		% 			sig_idx(end+1) = i_unit;
 		% 		else
 		% 			insig_idx(end+1)= i_unit;
 		% 		end
-		
+		%
 		% 		for ANOVA and ANOVAN
 		test = p<0.05;
 		if test == 0
@@ -109,45 +120,55 @@ for i_alignment = 1 : length(alignment_event_list)
 			end
 		end
 	end
-
-
-
-% 	% 		plot the graph
 	fh_population = figure('Name', [cur_alignment, ': ', 'A_LR_mean_firing_rates'], 'Visible', figure_visibility_string);
-% 	hold on
-% 	scatter(Left_mean_firing_rate(insig_idx), Right_mean_firing_rate(insig_idx),'filled','DisplayName', 'insignificant');
-% 	scatter(Left_mean_firing_rate(sig_idx), Right_mean_firing_rate(sig_idx),'filled','DisplayName', 'significant');
-% 	y_limits = get(gca(), 'YLim');
-% 	plot(y_limits, y_limits, 'Color', [0 0 0], 'DisplayName', 'y=x' );
-% 	legend('insignificant','significant','y=x','Location','northwest')
-% 	drawnow
-% 	hold off
-% 	title({['Alignment: ', cur_alignment]}, 'Interpreter', 'None');
-% 	subtitle({['Summary of mean firing rates: ', num2str(length(sig_idx)), ' significant points ', num2str(length(insig_idx)),' non-significant points']}, 'Interpreter', 'None');
-% 	xlabel('Left mean firing rates [Hz]');
-% 	ylabel('Right mean firing rates [Hz]');
-% plot_list = {'LR', 'DiffGo', 'LR&DiffGo'};
-% % for ANOVA
-% 	for i_plot = 1:length(p)
-% 		subplot(1,3,i_plot)
-% 		cur_insig_idx = insig_idx(i_plot,:);
-% 		cur_sig_idx = sig_idx(i_plot,:);
-% 		hold on
-% 		histogram(eta_squared(i_plot,nonzeros(cur_insig_idx)),'BinWidth', 0.05);
-% 		histogram(eta_squared(i_plot, nonzeros(cur_sig_idx)),'BinWidth', 0.05);
-% 		title({cell2mat(plot_list(i_plot))}, 'FontSize',10, 'Interpreter', 'None');
-% 		xlabel('Effect Size (eta squared)');
-% 		ylabel('Counts');
-% 		sgtitle({['Alignment: ', cur_alignment, ' Two-way anova of LR%DiffGo']}, 'Interpreter', 'None');
-% 		if i_plot == 1
-% 			legend('insignificant','significant');
-% 		end
-% 			hold off
-% 	end
-% 	
-% 	for summary table of anovan
-	col = {'LR','DiffGo','LR&DiffGo','Counts','Percentage'};
-	row = {'No significant','LR only','DiffGo only','LR&DiffGo only','LR and DiffGo','LR and LR&DiffGo','DiffGo and LR&DiffGo','All significant','Counts','Percentage'};
+	
+	% 		calculate if population hasLR bias
+	
+	% 	[h_bias,p_bias,ci_bias,stats_bias] = ttest(Left_mean_firing_rate(sig_idx)-Right_mean_firing_rate(sig_idx));
+	
+	%	Venn diagram of	pos and LR: those tuned to LR also significant in
+	%	pos analysis: pos_sig_idx need to be changed in line 115 and 117
+	% 	pos_LR = intersect(pos_sig_idx, sig_idx);
+	
+	% 	% 	% 		plot the scatter plot
+	% 	hold on
+	% 	scatter(Left_mean_firing_rate(insig_idx), Right_mean_firing_rate(insig_idx),'filled','DisplayName', 'insignificant');
+	% 	scatter(Left_mean_firing_rate(sig_idx), Right_mean_firing_rate(sig_idx),'filled','DisplayName', 'significant');
+	% 	y_limits = get(gca(), 'YLim');
+	% 	plot(y_limits, y_limits, 'Color', [0 0 0], 'DisplayName', 'y=x' );
+	% 	legend('insignificant','significant','y=x','Location','northwest')
+	% 	drawnow
+	% 	hold off
+	% 	title({['Alignment: ', cur_alignment]}, 'Interpreter', 'None');
+	% 	subtitle({['Summary of mean firing rates: ', num2str(length(sig_idx)), ' significant points ', num2str(length(insig_idx)),' non-significant points'],...
+	% 		['LR bias for significant units paired t-test p =', num2str(p_bias,'%.4f')]}, 'Interpreter', 'None');
+	% 	xlabel('Left mean firing rates [Hz]');
+	% 	ylabel('Right mean firing rates [Hz]');
+	
+	plot_list = {'LR', 'DiffGo', 'LR&DiffGo'};
+	% for ANOVA
+	
+	for i_plot = 1:length(p)
+		subplot(1,3,i_plot)
+		cur_insig_idx = insig_idx(i_plot,:);
+		cur_sig_idx = sig_idx(i_plot,:);
+		hold on
+		histogram(eta_squared(i_plot,nonzeros(cur_insig_idx)),'BinWidth', 0.05);
+		histogram(eta_squared(i_plot, nonzeros(cur_sig_idx)),'BinWidth', 0.05);
+		title({cell2mat(plot_list(i_plot))}, 'FontSize',10, 'Interpreter', 'None');
+		xlabel('Effect Size (eta squared)');
+		ylabel('Counts');
+		sgtitle({['Alignment: ', cur_alignment, ' Two-way anova of LR%DiffGo']}, 'Interpreter', 'None');
+		if i_plot == 1
+			legend('insignificant','significant');
+		end
+		hold off
+	end
+	
+	% 	for summary table of anovan
+	
+	col = ["LR","DiffGo","LR&DiffGo","Counts","Fraction"];
+	row = {'No significant','LR only','DiffGo only','LR&DiffGo only','LR and DiffGo','LR and LR&DiffGo','DiffGo and LR&DiffGo','All significant','Counts','Fraction'};
 	sig_combo = [0 0 0; 1 0 0; 0 1 0; 0 0 1; 1 1 0; 1 0 1; 0 1 1; 1 1 1];
 	combo_len = length(sig_combo);
 	factor_percentage=[];
@@ -178,12 +199,11 @@ for i_alignment = 1 : length(alignment_event_list)
 	table_data = add_sig_combo';
 	table_data(10,4)=NaN;
 	table_data(9,5)=NaN;
-	fh =figure;
-	sig_table = uitable(fh, 'columnname',col, 'rowname', row, 'ColumnWidth',{'1x','1x','1x','2x','2x'},'data', table_data);
-	sig_table.Position = [20 20 800 400];
+	sig_table = table(table_data(:,1),table_data(:,2),table_data(:,3),table_data(:,4),table_data(:,5), 'VariableNames',col, 'RowNames', row);
+	writetable(sig_table,fullfile(output_directory,['Percentage of significant units', '.',  set.value, '.', cur_alignment, '.', '.csv']),"WriteRowNames",true);
 	
-% 	write_out_figure(fh_population, fullfile(output_directory, ['Summary', '.',  set.value, '.', cur_alignment, '.', '.pdf']));
-	write_out_figure(fh, fullfile(output_directory,['Percentage of significant units', '.',  set.value, '.', cur_alignment, '.', '.pdf']));
+	write_out_figure(fh_population, fullfile(output_directory, ['Summary of mean firing rate', '.',  set.value, '.', cur_alignment, '.', '.pdf']));
+	
 end
 
 

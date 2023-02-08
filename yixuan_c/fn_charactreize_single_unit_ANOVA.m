@@ -18,7 +18,7 @@ set.value ='SoloA';
 % time windows, range relative to alignment
 window.range = [-500 500];
 
-gaussian_filter_width = 50;
+gaussian_filter_width = 150;
 Abl_degree = atand((960-849)/(450-389))+180;
 Aml_degree = atand((500-450)/(960-849))+270;
 Atl_degree = 360-atand((960-849)/(612-450));
@@ -51,18 +51,7 @@ for i_alignment = 1 : length(alignment_event_list)
 	cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
 	adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
 	firing_rate_Hz = sum(cur_data_struct.raster_data(goodtrial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-% 	This is most likely rubbish
-% 	cur_timing_factor = repmat(alignment_event_list{i_alignment},1,length(goodtrial_idx));
-% 	if i_alignment == 1
-% 		firing_rate_timing = firing_rate_Hz
-% 		cur_timing_factor = regexp(cur_timing_factor,'\A','split');
-% 		timing_factor = cur_timing_factor(2:end);
-% 	else 
-% 		firing_rate_Hz(end+1)= firing_rate_Hz;
-% 		cur_timing_factor = regexp(cur_timing_factor,'\B','split');
-% 		timing_factor(end+1) =  cur_timing_factor(2:end);
-% 	end
-	
+
 	[p, tbl, stats] = anova1(firing_rate_Hz, factor_list(goodtrial_idx),'off');
 	eta_squared = [];
 	eta_squared = cell2mat(tbl(2,2))/cell2mat(tbl(4,2)); % 	the between group ss divided by total ss
@@ -80,7 +69,7 @@ for i_alignment = 1 : length(alignment_event_list)
 		cur_factor_instance = unique_factors{i_factor_instance};
 		cur_factor_instance_trial_idx =  find(strcmp(factor_list, cur_factor_instance));
 		cur_trial_idx = intersect(cur_factor_instance_trial_idx, goodtrial_idx);
-		cur_data = mean(cur_data_struct.raster_data(cur_trial_idx, :), 1, 'omitnan')*length(cur_data_struct.raster_data(cur_trial_idx, :));
+		cur_data = mean(cur_data_struct.raster_data(cur_trial_idx, :), 1, 'omitnan') * (1000 / cur_data_struct.raster_site_info.bin_width_ms);
 % 		cur_raster = cur_data_struct.raster_data(cur_trial_idx, adjusted_window_range(1):adjusted_window_range(2));
 		legend_list(end+1) = {cur_factor_instance};
 	
@@ -123,6 +112,7 @@ for i_alignment = 1 : length(alignment_event_list)
 		
 		%[N, edges, bin] = histcounts(cur_data_struct.raster_data(cur_trial_idx, :), size(cur_data_struct.raster_data,2));
 	end
+	
 	boxplot_frame = table(degree_frame, firing_rate_frame);
 	subplot(6,1,1:3);
 	mystring = 'a(1)+a(2)*cosd(theta - a(3))';
@@ -143,7 +133,7 @@ for i_alignment = 1 : length(alignment_event_list)
 	ylabel('Firing rate [Hz]');
 
 	sgtitle({['Alignment: ', cur_alignment]}, 'Interpreter', 'None');
-	subtitle(subplot(6,1,5:6),{['Factor: ', factor_name, ' (anova p-value =', num2str(p), ' Eta squared = ', num2str(eta_squared), ')']}, 'Interpreter', 'None');
+	subtitle(subplot(6,1,5:6),{['Factor: ', factor_name, ' (anova p-value =', num2str(p, '%.4f'), ' Eta squared = ', num2str(eta_squared, '%.3f'), ')']}, 'Interpreter', 'None');
 % 	subtitle(subplot(6,1,1:3), 'Tuning Curve')
 	
 	unit_name_channel = unit_name{5};

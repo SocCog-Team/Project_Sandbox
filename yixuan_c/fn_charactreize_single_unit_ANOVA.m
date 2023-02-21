@@ -50,21 +50,36 @@ for i_alignment = 1 : length(alignment_event_list)
 	cur_alignment = alignment_event_list{i_alignment};
 	cur_data_struct = unit_raster_by_alignment_event.(cur_alignment);
 	adjusted_window_range = window.range + cur_data_struct.raster_site_info.pre_event_dur_ms;
-	firing_rate_Hz = sum(cur_data_struct.raster_data(goodtrial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-
-	[p, tbl, stats] = anova1(firing_rate_Hz, factor_list(goodtrial_idx),'off');
-	eta_squared = [];
-	eta_squared = cell2mat(tbl(2,2))/cell2mat(tbl(4,2)); % 	the between group ss divided by total ss
+	firing_rate_Hz = sum(cur_data_struct.raster_data(:, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
+	
+	[p, tbl, stats] = anova1(firing_rate_Hz(goodtrial_idx), factor_list(goodtrial_idx),'off');
+	cur_group_idx = [factor_idx(goodtrial_idx)];
+	[uGroup, aIx, bIx] = unique(cur_group_idx, 'rows');
+	[sorted_bIx, sort_idx] = sort(bIx);
+	
+	if isnan(p) == 0
+		temp = mes1way(firing_rate_Hz(goodtrial_idx(sort_idx)), 'partialeta2', 'group',cur_group_idx(sort_idx));
+		eta_squared = [];
+		for i = 1:length(p)
+			eta_squared(end+1)= temp.partialeta2(i);
+		end
+	else
+		eta_squared = [];
+		for i = 1:length(p)
+			eta_squared(end+1)= nan;
+		end
+	end % 	the between group ss divided by total ss
 	
 	% plot the average firing rate plot
 	
 	fh = figure('Name', [cur_alignment, ': ', factor_name], 'Visible', figure_visibility_string);
+	t = tiledlayout(2,1,'TileSpacing','Compact','Padding','Compact');
 	cur_x_vec = cur_data_struct.raster_site_info.event_aligned_bincenter_ts_list;
 	unique_factors = unique(factor_list(goodtrial_idx));
 	factor_color = lines(length(unique_factors));
 	legend_list = {};
 
-
+	nexttile
 	for i_factor_instance = 1 : length(unique_factors)
 		cur_factor_instance = unique_factors{i_factor_instance};
 		cur_factor_instance_trial_idx =  find(strcmp(factor_list, cur_factor_instance));
@@ -75,7 +90,6 @@ for i_alignment = 1 : length(alignment_event_list)
 	
 		hold on
 		cur_smooth_data = smoothdata(cur_data, 'gaussian', gaussian_filter_width);
-		subplot(6,1,5:6);
 		plot(cur_x_vec, cur_smooth_data, 'Color', factor_color(i_factor_instance, :));
 		%[N, edges, bin] = histcounts(cur_data_struct.raster_data(cur_trial_idx, :), size(cur_data_struct.raster_data,2));
 	end
@@ -87,7 +101,8 @@ for i_alignment = 1 : length(alignment_event_list)
 	% show the statistics analysis window
 	%plot(window.range, [0 0], 'Color', [0.5 0.5 0.5], 'LineWidth', 2.0);
 	patch([window.range(1), window.range(2), window.range(2), window.range(1)], [y_limits(1), y_limits(1), y_limits(2), y_limits(2)], [0.9 0.9 0.9], 'EdgeColor', 'none', 'FaceColor', [0.5 0.5 0.5], 'FaceAlpha', 0.1);
-	legend(legend_list);
+	legend(legend_list,'Location','eastoutside');
+	title({['Factor: ', factor_name, ' (anova p-value =', num2str(p, '%.4f'), ' partial eta squared = ', num2str(eta_squared, '%.3f'), ')']}, 'Interpreter', 'None');
 	xlabel('Time relative to alignment event [ms]');
 	ylabel('Firing rate [Hz]');
 	hold off
@@ -104,7 +119,7 @@ for i_alignment = 1 : length(alignment_event_list)
 		cur_trial_idx = intersect(cur_factor_instance_trial_idx, goodtrial_idx);
 		cur_data = mean(cur_data_struct.raster_data(cur_trial_idx, :), 1, 'omitnan')*length(cur_data_struct.raster_data(cur_trial_idx, :));
 % 		cur_raster = cur_data_struct.raster_data(cur_trial_idx, adjusted_window_range(1):adjusted_window_range(2));
-		legend_list(end+1) = {cur_factor_instance};
+		legend_list(end+1) = {[cur_factor_instance, ' (N: ', num2str(length(cur_trial_idx), '%d'), ')']};
 		cur_factor_firing_rate = sum(cur_data_struct.raster_data(cur_trial_idx, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
 		factor_firing_rate(end+1)=mean(cur_factor_firing_rate);
 		firing_rate_frame = cat(1,firing_rate_frame, cur_factor_firing_rate);
@@ -114,7 +129,7 @@ for i_alignment = 1 : length(alignment_event_list)
 	end
 	
 	boxplot_frame = table(degree_frame, firing_rate_frame);
-	subplot(6,1,1:3);
+	nexttile
 	mystring = 'a(1)+a(2)*cosd(theta - a(3))';
 	myfun= inline(mystring, 'a', 'theta');
 	a = nlinfit(degree_list, factor_firing_rate, myfun, [1 1 0]);
@@ -123,9 +138,9 @@ for i_alignment = 1 : length(alignment_event_list)
 	boxplot(boxplot_frame.firing_rate_frame, boxplot_frame.degree_frame, 'Positions',boxplot_frame.degree_frame);
 	y_limits = get(gca(), 'YLim');
 	axis([0 360 y_limits])
-	plot(linspace(0,360), factor_fit, '-','DisplayName', 'Tuning curve (cos)');
+	plot(linspace(0,360), factor_fit, '-','DisplayName', 'Tuning curve');
 	plot([180 180], y_limits, '--','Color', [0 0 0]);
-	legend('Tuning curve (cos)','L/R Line')
+	legend('Tuning curve','L/R Line','Location','eastoutside')
 	xticks(0:60:360)
 	xticklabels({'0','60','120','180','240','300'})
 	hold off
@@ -133,7 +148,6 @@ for i_alignment = 1 : length(alignment_event_list)
 	ylabel('Firing rate [Hz]');
 
 	sgtitle({['Alignment: ', cur_alignment]}, 'Interpreter', 'None');
-	subtitle(subplot(6,1,5:6),{['Factor: ', factor_name, ' (anova p-value =', num2str(p, '%.4f'), ' Eta squared = ', num2str(eta_squared, '%.3f'), ')']}, 'Interpreter', 'None');
 % 	subtitle(subplot(6,1,1:3), 'Tuning Curve')
 	
 	unit_name_channel = unit_name{5};

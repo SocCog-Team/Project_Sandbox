@@ -22,7 +22,7 @@ mfilepath = fileparts(fq_mfilename);
 
 % definitons
 
-loop_over_units = 1;
+loop_over_units = 0;
 array = 0;
 
 
@@ -39,8 +39,8 @@ end
 % PETHdata path
 PETHdata_base_dir = fullfile(session_FQN, 'TDT', 'PETHdata');
 raster_dir_relative_to_alignment = fullfile('raster_format', 'ALL_LABELS');
-output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis','pos_DiffGo_analysis');
-% output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'testing');
+% output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis','SoloA_Dyadic_comparison','Dyadic_TrialSubtype&LR_separated_by_DiffGo');
+output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'LR_analysis');
 
 if ~isempty(output_directory)
 	mkdir(output_directory);
@@ -61,7 +61,8 @@ end
 
 % list of alignments
 alignment_event_list = {'A_InitialFixationReleaseTime_ms', 'B_InitialFixationReleaseTime_ms'};
-baseline_alignment = { 'A_TargetOnsetTime_ms'};
+% baseline_alignment = { 'A_TargetOnsetTime_ms'};
+baseline_alignment = {'A_InitialFixationReleaseTime_ms', 'B_InitialFixationReleaseTime_ms'};
 initial_alignment_event = alignment_event_list{1};
 n_alignment_events = length(alignment_event_list);
 
@@ -96,16 +97,16 @@ if (loop_over_units)
 			unit_raster_by_alignment_event.(cur_alignment_event) = load(fullfile(cur_unit_dir, cur_unit_name));
 			unit_raster_by_alignment_event.(cur_alignment_event).unique_label_instances_struct = unique_label_instances_struct;
 		end % i_alignment
-		cur_unit_baseline_dir =  fullfile(PETHdata_base_dir, baseline_alignment{1}, raster_dir_relative_to_alignment);
-		unit_raster_by_alignment_event.(baseline_alignment{1}) = load(fullfile(cur_unit_baseline_dir, cur_unit_baseline_name));
+% 		cur_unit_baseline_dir =  fullfile(PETHdata_base_dir, baseline_alignment{1}, raster_dir_relative_to_alignment);
+% 		unit_raster_by_alignment_event.(baseline_alignment{1}) = load(fullfile(cur_unit_baseline_dir, cur_unit_baseline_name));
 		
 		
-						fn_charactreize_single_unit_ANOVAN(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
+% 						fn_charactreize_single_unit_ANOVAN(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
 		% 						fn_charactreize_single_unit_ANOVA(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
 		%
 		% 	Solo LR analysis: draw the graph of firing rate against tiem for each cluster
 		
-% 		[adjusted_window_range, unit_label, population_label, baseline_sum, population_sum, cur_x_vec, unique_factors] = fn_charactreize_single_unit(unit_label, population_label, baseline_sum, baseline_alignment, unit_raster_by_alignment_event, alignment_event_list,  unit_name, output_directory, session_ID, population_sum);
+		[adjusted_window_range, unit_label, population_label, baseline_sum, population_sum, cur_x_vec, unique_factors] = fn_charactreize_single_unit(unit_label, population_label, baseline_sum, baseline_alignment, unit_raster_by_alignment_event, alignment_event_list,  unit_name, output_directory, session_ID, population_sum);
 		
 		% 		Diadic analysis
 		% 				dyadic_fn_charactreize_single_unit(unit_raster_by_alignment_event, alignment_event_list, unit_name, output_directory, session_ID);
@@ -113,6 +114,14 @@ if (loop_over_units)
 	end %i_unit
 	population_label = population_label';
 	unit_label = unit_label';
+	% eliminate the units with low firing rate
+	population_mean = sum(population_sum(:, adjusted_window_range(1):adjusted_window_range(2)), 2) / 1001;
+	goodunit_idx = find(population_mean>1);
+	population_label = population_label(goodunit_idx);
+	baseline_sum = baseline_sum(goodunit_idx);
+	population_sum = population_sum(goodunit_idx,:);
+	unit_label = unit_label(goodunit_idx);
+	
 	for i_unit_label = 1: length(unit_label)
 		cur_label = unit_label{i_unit_label};
 		cur_channel = str2num(cur_label(end-2:end));
@@ -135,6 +144,9 @@ if (loop_over_units)
 	pattern_label(find(pattern_label > 0)) = 1;
 	pattern_label(find(pattern_label < 0)) = 2;
 	unique_pattern_label = unique(pattern_label);
+	
+	
+	
 	% 		plot the graph
 	if (array)
 		gaussian_filter_width = 150;
@@ -189,7 +201,7 @@ if (loop_over_units)
 						patch([window.range(1), window.range(2), window.range(2), window.range(1)], [y_limits(1), y_limits(1), y_limits(2), y_limits(2)], [0.9 0.9 0.9], 'EdgeColor', 'none', 'FaceColor', [0.5 0.5 0.5], 'FaceAlpha', 0.1);
 						hold off
 						title({[array_list{i_population_plot}, ' N = [', num2str(data_ttest(1)), ' ',num2str(data_ttest(2)), ']']}, 'Interpreter', 'None');
-						ylabel('Normalised firing rate');
+% 						ylabel('Normalised firing rate ');
 					else
 						hold on
 						factor_color = lines(length(unique_factors));
@@ -234,11 +246,11 @@ if (loop_over_units)
 						
 						title({[array_list{i_population_plot}, ' N = [', num2str(data_ttest(1)), ' ',num2str(data_ttest(2)), ']']}, 'Interpreter', 'None');
 						xlabel(t, 'Time relative to alignment event [ms]');
-						ylabel('Normalised firing rate');
+						ylabel(t, 'Normalised firing rate (t-score)');
 					end
 					sgtitle({['Alignment: ', cur_alignment, ' Pattern: ', pattern_list{i_pattern}]}, 'Interpreter', 'None');
 				end
-				write_out_figure(fh, fullfile(output_directory, ['Array analysis of LR firing rate_SoloA', cur_alignment,'.', pattern_list{i_pattern},  '.pdf']));
+				write_out_figure(fh, fullfile(output_directory, ['Array analysis of LR firing rate_SoloA_', cur_alignment,'.', pattern_list{i_pattern},  '.pdf']));
 
 			end
 		end

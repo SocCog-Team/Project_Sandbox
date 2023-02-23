@@ -17,15 +17,15 @@ set.type = 'ByTrialSubType';
 set.value ='SoloA';
 % time windows, range relative to alignment
 window.range = [-500 500];
-baseline_window.range = [-500 0];
+baseline_window.range = [-999 -600];
 
 gaussian_filter_width = 150;
-baseline_alignment_data =  unit_raster_by_alignment_event.(baseline_alignment{1});
 
 
 
 for i_alignment = 1 : length(alignment_event_list)
 	reference_alignment_data = unit_raster_by_alignment_event.(alignment_event_list{i_alignment});
+	baseline_alignment_data =  unit_raster_by_alignment_event.(baseline_alignment{i_alignment});
 
 	trials_in_set_idx = reference_alignment_data.raster_site_info.TrialSets.(set.type).(set.value);
 	rewarded_trial_idx = reference_alignment_data.raster_site_info.TrialSets.ByOutcome.REWARD;
@@ -49,7 +49,7 @@ for i_alignment = 1 : length(alignment_event_list)
 	baseline_adjusted_window_range = baseline_window.range + baseline_alignment_data.raster_site_info.pre_event_dur_ms;
 
 	firing_rate_Hz = sum(cur_data_struct.raster_data(:, adjusted_window_range(1):adjusted_window_range(2)), 2) / (diff(window.range)/1000);
-	baseline_firing_rate_Hz = mean(sum(cur_data_struct.raster_data(goodtrial_idx, baseline_adjusted_window_range(1):baseline_adjusted_window_range(2)), 2) / (diff(window.range)/1000));
+	baseline_firing_rate_Hz = mean(sum(cur_data_struct.raster_data(goodtrial_idx, baseline_adjusted_window_range(1):baseline_adjusted_window_range(2)), 2) / (diff(baseline_window.range)/1000));
 
 	
 	sd = ((std(firing_rate_Hz(intersect(goodtrial_idx, Left_idx)))^3 + std(firing_rate_Hz(intersect(goodtrial_idx, Right_idx)))^3)/2)^0.5;

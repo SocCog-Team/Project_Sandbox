@@ -41,6 +41,7 @@ PETHdata_base_dir = fullfile(session_FQN, 'TDT', 'PETHdata');
 raster_dir_relative_to_alignment = fullfile('raster_format', 'ALL_LABELS');
 % output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis','SoloA_Dyadic_comparison','Dyadic_TrialSubtype&LR_separated_by_DiffGo');
 output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'LR_analysis');
+output_directory = fullfile(session_FQN, 'TDT', 'PerUnitAnalysis', 'Dyadic2');
 
 if ~isempty(output_directory)
 	mkdir(output_directory);
@@ -260,7 +261,12 @@ end
 % 	draw the population plot of mean frequency of left against right: to
 % 	run this comment the 60-88 line for easier computation
 
+fn_characterize_individual_units_population_dyadic(raster_dir_relative_to_alignment, initial_alignment_event, PETHdata_base_dir, proto_unit_list, n_units, alignment_event_list, output_directory, session_ID);
+
+
 fn_characterize_individual_units_population(raster_dir_relative_to_alignment, initial_alignment_event, PETHdata_base_dir, proto_unit_list, n_units, alignment_event_list, output_directory, session_ID);
+
+
 
 
 % extract windows

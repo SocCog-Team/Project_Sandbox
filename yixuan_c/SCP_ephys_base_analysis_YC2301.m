@@ -608,6 +608,14 @@ B_IFTrel_minus_Ago_list(B_IFTRelease_minus_A_GO_RT_diff_struct.quantized_data ==
 B_IFTrel_minus_Ago_list(B_IFTRelease_minus_A_GO_RT_diff_struct.quantized_data == 1000) = {'B_slower_Ago'};
 B_IFTrel_minus_Ago_list(AB_equal_go_idx) = {'ABgo'};
 
+% for dyadic trials we want 500ms clean of others go-signal & action,
+% whatever was closer in time
+
+A_IFTrel_minus_Bgo_or_action_list
+
+
+
+
 % TargetAcquisitionRT
 A_TargetAcquisitionRT = report_struct.data(:, report_struct.cn.A_TargetTouchTime_ms); % - report_struct.data(:, report_struct.cn.A_GoSignalTime_ms);
 B_TargetAcquisitionRT = report_struct.data(:, report_struct.cn.B_TargetTouchTime_ms); % - report_struct.data(:, report_struct.cn.B_GoSignalTime_ms);
